@@ -12,10 +12,12 @@ import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 
 public class FoundPrefixer extends SimpleChannelHandler {
-    private final ClusterName clusterName;
+    private final String clusterName;
+    private final String apiKey;
 
-    public FoundPrefixer(ClusterName clusterName) {
+    public FoundPrefixer(String clusterName, String apiKey) {
         this.clusterName = clusterName;
+        this.apiKey = apiKey;
     }
 
     private boolean prefixed = false;
@@ -55,16 +57,22 @@ public class FoundPrefixer extends SimpleChannelHandler {
 
     public ChannelBuffer getPrefixBuffer() throws IOException {
         int versionLength = 4;
-        byte[] clusterNameBytes = clusterName.value().getBytes(StandardCharsets.UTF_8);
+        byte[] clusterNameBytes = clusterName.getBytes(StandardCharsets.UTF_8);
         int clusterNameLength = clusterNameBytes.length;
 
+        byte[] apiKeyBytes = apiKey.getBytes(StandardCharsets.UTF_8);
+        int apiKeyLength = apiKeyBytes.length;
+
         return ChannelBuffers.wrappedBuffer(
-            concat(getIntBytes(clusterNameLength + 4 + versionLength),
+            concat(getIntBytes(versionLength + 4 + clusterNameLength + 4 + apiKeyLength),
 
                     getIntBytes(Version.CURRENT.id),
 
                     getIntBytes(clusterNameLength),
-                    clusterNameBytes
+                    clusterNameBytes,
+
+                    getIntBytes(apiKeyLength),
+                    apiKeyBytes
             )
         );
     }

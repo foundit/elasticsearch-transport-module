@@ -12,14 +12,20 @@ object Bootstrap extends App {
   val settings = ImmutableSettings.settingsBuilder()
     .put("cluster.name", "c70ce4781ef74c0aa41e315241556a5b")
     .put("client.transport.ignore_cluster_name", true)
+
     .put("client.transport.sniff", false)
 
     .put("transport.type", "no.found.elasticsearch.transport.netty.FoundNettyTransportModule")
-    .put("transport.found.ssl.unsafe_allow_self_signed", true)
     .put("transport.found.host-suffixes", ".localhacks.com,.foundcluster.com")
+    .put("transport.found.ssl.unsafe_allow_self_signed", true)
+    .put("transport.found.ssl-ports", "9343")
+
+    .put("transport.found.api-key", "foobarbaz")
+
     .put("transport.netty.connections_per_node.low", 1)
     .put("transport.netty.connections_per_node.med", 1)
     .put("transport.netty.connections_per_node.high", 1)
+
     .build()
 
   var client = new TransportClient(settings)

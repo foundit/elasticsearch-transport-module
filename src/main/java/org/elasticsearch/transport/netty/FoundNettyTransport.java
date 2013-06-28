@@ -30,6 +30,7 @@ public class FoundNettyTransport extends NettyTransport {
 
     private final String[] hostSuffixes;
     private final int[] sslPorts;
+    private final String apiKey;
 
     @Inject
     public FoundNettyTransport(Settings settings, ClusterName clusterName, ThreadPool threadPool, NetworkService networkService, Injector injector) {
@@ -51,20 +52,11 @@ public class FoundNettyTransport extends NettyTransport {
         }
 
         this.clusterName = clusterName;
+
+        this.apiKey = settings.get("transport.found.api-key");
+
         this.injector = injector;
     }
-
-/*
-
-    @Override
-    public void sendRequest(DiscoveryNode node, long requestId, String action, TransportRequest request, TransportRequestOptions options) throws IOException, TransportException {
-        if(!nodeConnected(node)) {
-            connectToNode(node);
-        }
-        super.sendRequest(node, requestId, action, request, options);
-    }
-
-*/
 
     void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
         if(e.getCause() instanceof SSLException) {
@@ -88,6 +80,8 @@ public class FoundNettyTransport extends NettyTransport {
                 public ChannelPipeline getPipeline() throws Exception {
                     return Channels.pipeline(new SimpleChannelHandler() {
                         List<MessageEvent> pendingEvents = new ArrayList<MessageEvent>();
+
+
 
                         @Override
                         public void channelBound(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
@@ -118,7 +112,7 @@ public class FoundNettyTransport extends NettyTransport {
 
                                     ctx.getPipeline().remove(this);
                                     ctx.sendUpstream(e);
-                                    ctx.getChannel().write(new FoundPrefixer(clusterName).getPrefixBuffer());
+                                    ctx.getChannel().write(new FoundPrefixer(inetSocketAddress.getHostString(), apiKey).getPrefixBuffer());
 
                                     removedThis = true;
                                 }
@@ -146,6 +140,7 @@ public class FoundNettyTransport extends NettyTransport {
 
                         @Override
                         public void writeRequested(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
+                            // TODO: race condition possible?
                             pendingEvents.add(e);
                         }
 
