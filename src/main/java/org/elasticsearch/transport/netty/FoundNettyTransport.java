@@ -1,35 +1,77 @@
 package org.elasticsearch.transport.netty;
 
-import no.found.esproxy.FoundPrefixer;
+import no.found.elasticsearch.transport.netty.FoundPrefixer;
+import no.found.elasticsearch.transport.netty.FoundSSLHandler;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.common.inject.Inject;
+import org.elasticsearch.common.inject.Injector;
 import org.elasticsearch.common.netty.bootstrap.ClientBootstrap;
 import org.elasticsearch.common.netty.channel.*;
 import org.elasticsearch.common.network.NetworkService;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.threadpool.ThreadPool;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLParameters;
+import javax.net.ssl.*;
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 public class FoundNettyTransport extends NettyTransport {
     private final ClusterName clusterName;
+    private final Injector injector;
+
+    private final String[] hostSuffixes;
+    private final int[] sslPorts;
 
     @Inject
-    public FoundNettyTransport(Settings settings, ClusterName clusterName, ThreadPool threadPool, NetworkService networkService) {
+    public FoundNettyTransport(Settings settings, ClusterName clusterName, ThreadPool threadPool, NetworkService networkService, Injector injector) {
         super(settings, threadPool, networkService);
 
+        hostSuffixes = settings.getAsArray("transport.found.host-suffixes", new String[] {".foundcluster.com", ".found.no"});
+
+        List<Integer> ports = new LinkedList<Integer>();
+        for(String strPort: settings.getAsArray("transport.found.ssl-ports", new String[] {"9343"})) {
+            try {
+                ports.add(Integer.parseInt(strPort));
+            } catch (NumberFormatException nfe) {
+                // ignore
+            }
+        }
+        sslPorts = new int[ports.size()];
+        for(int i=0; i<ports.size(); i++) {
+            sslPorts[i] = ports.get(i);
+        }
+
         this.clusterName = clusterName;
+        this.injector = injector;
     }
 
+/*
+
+    @Override
+    public void sendRequest(DiscoveryNode node, long requestId, String action, TransportRequest request, TransportRequestOptions options) throws IOException, TransportException {
+        if(!nodeConnected(node)) {
+            connectToNode(node);
+        }
+        super.sendRequest(node, requestId, action, request, options);
+    }
+
+*/
+
+    void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
+        if(e.getCause() instanceof SSLException) {
+            return;
+        }
+        super.exceptionCaught(ctx, e);
+    }
 
     @Override
     protected void doStart() throws ElasticSearchException {
@@ -45,28 +87,46 @@ public class FoundNettyTransport extends NettyTransport {
                 @Override
                 public ChannelPipeline getPipeline() throws Exception {
                     return Channels.pipeline(new SimpleChannelHandler() {
-                        @Override
-                        public void channelBound(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
-                            ChannelPipeline pipeline = originalFactory.getPipeline();
+                        List<MessageEvent> pendingEvents = new ArrayList<MessageEvent>();
 
-                            boolean addedSsl = false;
+                        @Override
+                        public void channelBound(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
+                            final ChannelPipeline pipeline = originalFactory.getPipeline();
 
                             SocketAddress socketAddress = ctx.getChannel().getRemoteAddress();
+
+                            boolean removedThis = false;
+
                             if(socketAddress instanceof InetSocketAddress) {
                                 InetSocketAddress inetSocketAddress = (InetSocketAddress)socketAddress;
 
-                                if(Integer.toString(inetSocketAddress.getPort()).endsWith("43")) {
-                                    FoundSSLHandler handler = getSSLHandler(inetSocketAddress);
-                                    ctx.getPipeline().addFirst("ssl", handler);
+                                boolean isFoundCluster = false;
+                                for(String suffix: hostSuffixes) isFoundCluster = isFoundCluster || inetSocketAddress.getHostString().endsWith(suffix);
 
-                                    addedSsl = true;
+                                if(isFoundCluster) {
+                                    for(int sslPort: sslPorts) {
+                                        if(inetSocketAddress.getPort() == sslPort) {
+                                            FoundSSLHandler handler = getSSLHandler(inetSocketAddress);
+                                            ctx.getPipeline().addFirst("ssl", handler);
+                                            break;
+                                        }
+                                    }
+
+                                    //ctx.getPipeline().addLast("found-prefixer", new FoundPrefixer(clusterName));
+                                    //new FoundPrefixer(clusterName).sendPrefix(ctx);
+                                    //ctx.sendDownstream(new DownstreamMessageEvent());
+
+                                    ctx.getPipeline().remove(this);
+                                    ctx.sendUpstream(e);
+                                    ctx.getChannel().write(new FoundPrefixer(clusterName).getPrefixBuffer());
+
+                                    removedThis = true;
                                 }
                             }
 
-                            if(addedSsl) {
-                                ctx.getPipeline().addAfter("ssl", "found-prefixer", new FoundPrefixer(clusterName));
-                            } else {
-                                ctx.getPipeline().addLast("found-prefixer", new FoundPrefixer(clusterName));
+                            if(!removedThis) {
+                                ctx.getPipeline().remove(this);
+                                ctx.sendUpstream(e);
                             }
 
                             while(true) {
@@ -79,14 +139,10 @@ public class FoundNettyTransport extends NettyTransport {
                                 pipeline.remove(handler);
                             }
 
-                            ctx.getPipeline().remove(this);
-
-                            ctx.sendUpstream(e);
-
                             for(MessageEvent event: pendingEvents) ctx.sendDownstream(event);
+                            pendingEvents.clear();
                         }
 
-                        List<MessageEvent> pendingEvents = new ArrayList<MessageEvent>();
 
                         @Override
                         public void writeRequested(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
@@ -95,11 +151,8 @@ public class FoundNettyTransport extends NettyTransport {
 
                         private FoundSSLHandler getSSLHandler(InetSocketAddress inetSocketAddress) throws NoSuchAlgorithmException {
                             String hostString = inetSocketAddress.getHostString();
-                            if(hostString.contains("localhacks.com")) {
-                                hostString = "217aaf92c60b48eca43a9e9773eab36d-us-east-1.foundcluster.com";
-                            }
 
-                            SSLEngine engine = SSLContext.getDefault().createSSLEngine(hostString, inetSocketAddress.getPort());
+                            SSLEngine engine = createSslEngine(inetSocketAddress, hostString);
 
                             engine.setEnabledCipherSuites(new String[] {
                                     "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256",
@@ -166,18 +219,63 @@ public class FoundNettyTransport extends NettyTransport {
                             engine.setSSLParameters(sslParams);
 
                             engine.setEnableSessionCreation(true);
-                            engine.setNeedClientAuth(true);
+                            engine.setNeedClientAuth(false);
 
                             FoundSSLHandler handler = new FoundSSLHandler(engine);
-                            handler.setIssueHandshake(true);
-                            handler.setCloseOnSSLException(true);
+                            handler.setIssueHandshake(false);
+                            handler.setCloseOnSSLException(false);
+                            handler.setEnableRenegotiation(true);
 
                             return handler;
+                        }
+
+                        private SSLEngine createSslEngine(InetSocketAddress inetSocketAddress, final String hostString) throws NoSuchAlgorithmException {
+                            if(settings.getAsBoolean("transport.found.ssl.unsafe_allow_self_signed", false)) {
+                                final TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
+                                    @Override
+                                    public void checkClientTrusted( final X509Certificate[] chain, final String authType ) {
+
+                                    }
+                                    @Override
+                                    public void checkServerTrusted( final X509Certificate[] chain, final String authType ) throws CertificateException {
+
+                                        for(X509Certificate cert: chain) {
+                                            String dn = cert.getSubjectX500Principal().getName();
+
+                                            if(dn.contains("CN="+hostString)) return;
+
+                                            String[] hostParts = hostString.split("\\.", 2);
+                                            if(hostParts.length > 1) {
+                                                String lastHostPart = hostParts[1];
+
+                                                if(dn.contains("CN=*."+lastHostPart)) return;
+                                            }
+                                        }
+
+                                        throw new CertificateException("No name matching " + hostString + " found");
+                                    }
+                                    @Override
+                                    public X509Certificate[] getAcceptedIssuers() {
+                                        return new X509Certificate[0];
+                                    }
+                                } };
+
+                                // Install the all-trusting trust manager
+                                SSLContext sslContext = SSLContext.getInstance( "SSL" );
+                                try {
+                                    sslContext.init( null, trustAllCerts, new java.security.SecureRandom() );
+                                } catch (KeyManagementException e) {
+                                    e.printStackTrace();
+                                }
+                                return sslContext.createSSLEngine(hostString, inetSocketAddress.getPort());
+                            } else {
+                                return SSLContext.getDefault().createSSLEngine(hostString, inetSocketAddress.getPort());
+                            }
                         }
                     });
                 }
             });
-            
+
             clientBootstrapField.setAccessible(false);
         } catch (ReflectiveOperationException roe) {
             roe.printStackTrace();
