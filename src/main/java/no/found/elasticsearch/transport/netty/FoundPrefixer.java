@@ -11,52 +11,21 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 
-public class FoundPrefixer extends SimpleChannelHandler {
+public class FoundPrefixer {
     private final String clusterName;
     private final String apiKey;
+
+    private static final int revisionLength = 4;
+    private static final int revision = 1;
+
+    private static final int versionLength = 4;
 
     public FoundPrefixer(String clusterName, String apiKey) {
         this.clusterName = clusterName;
         this.apiKey = apiKey;
     }
 
-    private boolean prefixed = false;
-
-    @Override
-    public void connectRequested(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
-        super.connectRequested(ctx, e);
-    }
-
-    @Override
-    public void channelBound(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
-        super.channelBound(ctx, e);
-
-        prefixed = false;
-    }
-
-    @Override
-    public void writeRequested(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        if(!prefixed) {
-            prefixed = true;
-
-            SocketAddress remoteAddress = ctx.getChannel().getRemoteAddress();
-
-            if(remoteAddress instanceof InetSocketAddress) {
-                String remoteName = ((InetSocketAddress)remoteAddress).getHostString();
-                if(remoteName.contains(".foundcluster.com") || remoteName.contains(".localhacks.com")) {
-                    sendPrefix(ctx);
-                }
-            }
-        }
-        ctx.sendDownstream(e);
-    }
-
-    protected ChannelFuture sendPrefix(ChannelHandlerContext ctx) throws IOException {
-        return ctx.getChannel().write(getPrefixBuffer());
-    }
-
     public ChannelBuffer getPrefixBuffer() throws IOException {
-        int versionLength = 4;
         byte[] clusterNameBytes = clusterName.getBytes(StandardCharsets.UTF_8);
         int clusterNameLength = clusterNameBytes.length;
 
@@ -64,8 +33,12 @@ public class FoundPrefixer extends SimpleChannelHandler {
         int apiKeyLength = apiKeyBytes.length;
 
         return ChannelBuffers.wrappedBuffer(
-            concat(getIntBytes(versionLength + 4 + clusterNameLength + 4 + apiKeyLength),
+            concat(getIntBytes(4 + revisionLength + 4 + versionLength + 4 + clusterNameLength + 4 + apiKeyLength),
 
+                    getIntBytes(revisionLength),
+                    getIntBytes(revision),
+
+                    getIntBytes(versionLength),
                     getIntBytes(Version.CURRENT.id),
 
                     getIntBytes(clusterNameLength),
