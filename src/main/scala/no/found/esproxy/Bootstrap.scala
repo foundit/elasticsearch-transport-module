@@ -29,7 +29,7 @@ object Bootstrap extends App {
     .build()
 
   var client = new TransportClient(settings)
-    .addTransportAddress(new InetSocketTransportAddress("c70ce4781ef74c0aa41e315241556a5b.localhacks.com", 9343))
+    .addTransportAddress(new InetSocketTransportAddress("c70ce4781ef74c0aa41e315241556a5bx.localhacks.com", 9343))
 
   while(true) {
     try {
@@ -43,7 +43,6 @@ object Bootstrap extends App {
     } catch {
       case t: Throwable => {
         println(t.getMessage)
-        //client.addTransportAddress(new InetSocketTransportAddress("foo.localhacks.com", 9343))
       }
     }
 

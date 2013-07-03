@@ -648,7 +648,7 @@ public class FoundSSLHandler extends FrameDecoder
             try {
                 unwrap(ctx, e.getChannel(), ChannelBuffers.EMPTY_BUFFER, 0, 0);
             } catch (Exception cce) {
-                System.out.println("cce: " + cce.getMessage());
+                // TODO: ignore?
             }
             engine.closeOutbound();
             if (!sentCloseNotify.get() && handshaken) {
