@@ -655,7 +655,7 @@ public class FoundSSLHandler extends FrameDecoder
                 try {
                     engine.closeInbound();
                 } catch (SSLException ex) {
-                    if (logger.isDebugEnabled()) {
+                    if (logger.isDebugEnabled() && !ex.getMessage().contains("Inbound closed before receiving peer's close_notify")) {
                         logger.debug("Failed to clean up SSLEngine.", ex);
                     }
                 }
