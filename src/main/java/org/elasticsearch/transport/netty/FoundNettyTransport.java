@@ -1,16 +1,11 @@
 package org.elasticsearch.transport.netty;
 
-import no.found.elasticsearch.transport.netty.FoundPrefixer;
-import no.found.elasticsearch.transport.netty.FoundSSLHandler;
-import no.found.elasticsearch.transport.netty.FoundSSLUtils;
+import no.found.elasticsearch.transport.netty.FoundSwitchingChannelHandler;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.inject.Injector;
 import org.elasticsearch.common.netty.bootstrap.ClientBootstrap;
-import org.elasticsearch.common.netty.buffer.BigEndianHeapChannelBuffer;
-import org.elasticsearch.common.netty.buffer.ChannelBuffer;
-import org.elasticsearch.common.netty.buffer.ChannelBuffers;
 import org.elasticsearch.common.netty.channel.*;
 import org.elasticsearch.common.network.NetworkService;
 import org.elasticsearch.common.settings.Settings;
@@ -18,14 +13,6 @@ import org.elasticsearch.threadpool.ThreadPool;
 
 import javax.net.ssl.*;
 import java.lang.reflect.Field;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -92,7 +79,7 @@ public class FoundNettyTransport extends NettyTransport {
 
             clientBootstrapField.setAccessible(false);
         } catch (ReflectiveOperationException roe) {
-            roe.printStackTrace();
+            logger.error("Unable to update the transport pipeline. Plugin upgrade required.", roe);
         }
     }
 }

@@ -11,7 +11,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 
-public class FoundPrefixer {
+public class FoundTransportHeader {
     private final String clusterName;
     private final String apiKey;
 
@@ -20,12 +20,12 @@ public class FoundPrefixer {
 
     private static final int versionLength = 4;
 
-    public FoundPrefixer(String clusterName, String apiKey) {
+    public FoundTransportHeader(String clusterName, String apiKey) {
         this.clusterName = clusterName;
         this.apiKey = apiKey;
     }
 
-    public ChannelBuffer getPrefixBuffer() throws IOException {
+    public ChannelBuffer getHeaderBuffer() throws IOException {
         byte[] clusterNameBytes = clusterName.getBytes(StandardCharsets.UTF_8);
         int clusterNameLength = clusterNameBytes.length;
 

@@ -1,8 +1,5 @@
-package org.elasticsearch.transport.netty;
+package no.found.elasticsearch.transport.netty;
 
-import no.found.elasticsearch.transport.netty.FoundPrefixer;
-import no.found.elasticsearch.transport.netty.FoundSSLHandler;
-import no.found.elasticsearch.transport.netty.FoundSSLUtils;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.netty.buffer.ChannelBuffer;
 import org.elasticsearch.common.netty.buffer.ChannelBuffers;
@@ -66,7 +63,7 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
 
             logger.info("Authenticating with Found Elasticsearch");
             String remoteHostString = ((InetSocketAddress)ctx.getChannel().getRemoteAddress()).getHostString();
-            ChannelBuffer message = new FoundPrefixer(remoteHostString, apiKey).getPrefixBuffer();
+            ChannelBuffer message = new FoundTransportHeader(remoteHostString, apiKey).getHeaderBuffer();
 
             ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), Channels.future(ctx.getChannel()), message, ctx.getChannel().getRemoteAddress()));
         }
@@ -74,7 +71,6 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
 
     @Override
     public synchronized void writeRequested(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        System.out.println("HOLDING " + e.getMessage());
         pendingEvents.add(e);
     }
 
@@ -86,19 +82,18 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
             ChannelBuffer newBuffer = (ChannelBuffer)e.getMessage();
             buffered = ChannelBuffers.copiedBuffer(buffered, newBuffer);
 
-            if(buffered.readableBytes() < 4) {
+            if(buffered.readableBytes() < 8) {
                 return;
             }
             int payloadLength = buffered.getInt(0);
-
-            if(buffered.readableBytes() < payloadLength + 4) {
-                return;
-            }
-            buffered.skipBytes(4);
-
-            int revision = buffered.readInt();
+            int revision = buffered.getInt(4);
 
             if(revision == 1) {
+                if(buffered.readableBytes() < payloadLength + 4) {
+                    return;
+                }
+                buffered.skipBytes(8);
+
                 handleRevision1Response(ctx, payloadLength);
 
                 for(MessageEvent event: pendingEvents) ctx.sendDownstream(event);
@@ -127,13 +122,15 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
 
         logger.debug("Decoded payload with length:[{}], code:[{}], descriptionLength:[{}], description:[{}]", payloadLength, code, descriptionLength, description);
 
+        ctx.getPipeline().remove(this);
+
         if(200 <= code && code <= 299) {
             logger.info("Connected to Found Elasticsearch: [{}]: [{}]", code, description);
         } else {
             logger.error("Unable to connect to Found Elasticsearch: [{}]: [{}]", code, description);
+            ctx.getChannel().close();
+            return;
         }
-
-        ctx.getPipeline().remove(this);
 
         final ChannelPipeline pipeline = originalFactory.getPipeline();
 
@@ -147,6 +144,8 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
             pipeline.remove(handler);
         }
 
-        ctx.sendUpstream(new UpstreamMessageEvent(ctx.getChannel(), buffered.slice(), ctx.getChannel().getRemoteAddress()));
+        ChannelBuffer remaining = buffered.slice();
+        if(remaining.readableBytes() > 0)
+            ctx.sendUpstream(new UpstreamMessageEvent(ctx.getChannel(), remaining, ctx.getChannel().getRemoteAddress()));
     }
 }
