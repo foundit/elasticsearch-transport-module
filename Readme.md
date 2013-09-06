@@ -2,6 +2,12 @@
 
 A transport module that works with Found Elasticsearch.
 
+**The transport module is backwards-compatible with the default transport
+module.** This means that it can safely be added as a ``transport.type``,
+and it will only enable its authentication and SSL support when connecting
+to a Found-hosted Elasticsearch cluster. This equals less setting-differences
+between local development, staging and production.
+
 ## Installing
 
 To install, add a dependency to this module in your build system :
@@ -64,8 +70,6 @@ New settings introduced by this module:
 * **transport.found.ssl.unsafe_allow_self_signed**: Whether to accept self-signed
  certificates when using SSL. This is unsafe and allows for MITM-attacks, but
  may be useful for testing. Defaults to ``false``.
-
-**The transport is backwards-compatible with the default transport.**
 
 ## Example configuration
 
