@@ -55,19 +55,19 @@ valid API-keys.
 
 New settings introduced by this module:
 
-* **transport.found.host-suffixes**: A comma-separated list of host suffixes that
+* ``transport.found.host-suffixes``: A comma-separated list of host suffixes that
  trigger our attempt to authenticate with Found Elasticsearch. Defaults to
  ``foundcluster.com,found.no``.
 
-* **transport.found.ssl-ports**: A comma-separated list of ports that trigger our
+* ``transport.found.ssl-ports``: A comma-separated list of ports that trigger our
  SSL support. Defaults to ``9343``.
 
-* **transport.found.api-key**: An API-key which is used to authorize this client
+* ``transport.found.api-key``: An API-key which is used to authorize this client
  when connecting to Found Elasticsearch. API-keys are managed via the console as
  a list of Strings under the root level key "api_keys". Defaults to
  ``missing-api-key``
 
-* **transport.found.ssl.unsafe_allow_self_signed**: Whether to accept self-signed
+* ``transport.found.ssl.unsafe_allow_self_signed``: Whether to accept self-signed
  certificates when using SSL. This is unsafe and allows for MITM-attacks, but
  may be useful for testing. Defaults to ``false``.
 
