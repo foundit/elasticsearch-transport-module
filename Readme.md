@@ -110,3 +110,8 @@ while(true) {
     } catch (InterruptedException ie) { ie.printStackTrace(); }
 }
 ```
+
+## Complete example:
+
+A complete, runnable example can be found at
+[https://github.com/foundit/elasticsearch-transport-module-example](https://github.com/foundit/elasticsearch-transport-module-example)
