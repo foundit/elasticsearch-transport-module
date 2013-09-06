@@ -1,16 +1,15 @@
 package no.found.elasticsearch.transport.netty;
 
 import org.elasticsearch.Version;
-import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.common.netty.buffer.ChannelBuffer;
 import org.elasticsearch.common.netty.buffer.ChannelBuffers;
-import org.elasticsearch.common.netty.channel.*;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * An utility class for generating the initial headers for auth.
+ */
 public class FoundTransportHeader {
     private final String clusterName;
     private final String apiKey;

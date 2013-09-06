@@ -7,6 +7,8 @@ import org.elasticsearch.common.netty.channel.*;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.UnresolvedAddressException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +46,7 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
             if(isFoundCluster) {
                 for(int sslPort: sslPorts) {
                     if(inetSocketAddress.getPort() == sslPort) {
-                        logger.info("Enabling SSL on transport layer.");
+                        logger.info("Enabling SSL on transport layer with unsafeAllowSelfSigned=[{}].", unsafeAllowSelfSigned);
                         FoundSSLHandler handler = FoundSSLUtils.getSSLHandler(unsafeAllowSelfSigned, inetSocketAddress);
                         ctx.getPipeline().addFirst("ssl", handler);
                         break;
@@ -56,12 +58,12 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
     }
 
     @Override
-    public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
+    public synchronized void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
         super.channelConnected(ctx, e);
         if(isFoundCluster) {
             ctx.sendUpstream(e);
 
-            logger.info("Authenticating with Found Elasticsearch");
+            logger.info("Authenticating with Found Elasticsearch at [{}]", ctx.getChannel().getRemoteAddress());
             String remoteHostString = ((InetSocketAddress)ctx.getChannel().getRemoteAddress()).getHostString();
             ChannelBuffer message = new FoundTransportHeader(remoteHostString, apiKey).getHeaderBuffer();
 
@@ -122,8 +124,6 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
 
         logger.debug("Decoded payload with length:[{}], code:[{}], descriptionLength:[{}], description:[{}]", payloadLength, code, descriptionLength, description);
 
-        ctx.getPipeline().remove(this);
-
         if(200 <= code && code <= 299) {
             logger.info("Connected to Found Elasticsearch: [{}]: [{}]", code, description);
         } else {
@@ -131,6 +131,8 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
             ctx.getChannel().close();
             return;
         }
+
+        ctx.getPipeline().remove(this);
 
         final ChannelPipeline pipeline = originalFactory.getPipeline();
 
@@ -147,5 +149,18 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
         ChannelBuffer remaining = buffered.slice();
         if(remaining.readableBytes() > 0)
             ctx.sendUpstream(new UpstreamMessageEvent(ctx.getChannel(), remaining, ctx.getChannel().getRemoteAddress()));
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
+        if (e.getCause() instanceof ClosedChannelException) {
+            // do nothing
+        } else if(e.getCause() instanceof UnresolvedAddressException) {
+            logger.error("Unable to resolve one of the server addresses.");
+        } else if(e.getCause().getMessage() != null && e.getCause().getMessage().contains("Connection reset by peer")) {
+            // still do nothing
+        } else {
+            super.exceptionCaught(ctx, e);
+        }
     }
 }

@@ -1,5 +1,6 @@
 package no.found.elasticsearch.transport.netty;
 
+import org.elasticsearch.Version;
 import org.elasticsearch.cluster.ClusterNameModule;
 import org.elasticsearch.common.inject.Injector;
 import org.elasticsearch.common.inject.ModulesBuilder;
@@ -25,6 +26,7 @@ public class TestNettyTransport {
 
         ModulesBuilder modules = new ModulesBuilder();
 
+        modules.add(new Version.Module(Version.CURRENT));
         modules.add(new SettingsModule(settings));
         modules.add(new ClusterNameModule(settings));
         modules.add(new TransportModule(settings));

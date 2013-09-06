@@ -171,7 +171,6 @@ public class TestFoundSwitchingChannelHandler {
                 "NOTOK".getBytes(UTF_8) // NOTOK as bytes
         ), socketAddress));
 
-        verify(channelPipeline).remove(eq(handler));
         verify(channel).close();
     }
 

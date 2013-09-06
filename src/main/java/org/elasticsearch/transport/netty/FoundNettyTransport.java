@@ -2,32 +2,60 @@ package org.elasticsearch.transport.netty;
 
 import no.found.elasticsearch.transport.netty.FoundSwitchingChannelHandler;
 import org.elasticsearch.ElasticSearchException;
-import org.elasticsearch.cluster.ClusterName;
+import org.elasticsearch.Version;
 import org.elasticsearch.common.inject.Inject;
-import org.elasticsearch.common.inject.Injector;
 import org.elasticsearch.common.netty.bootstrap.ClientBootstrap;
 import org.elasticsearch.common.netty.channel.*;
 import org.elasticsearch.common.network.NetworkService;
+import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.threadpool.ThreadPool;
 
-import javax.net.ssl.*;
+import javax.net.ssl.SSLException;
 import java.lang.reflect.Field;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * A Transport that replaces the default Netty pipeline with one
+ * that supports authentication and SSL.
+ */
 public class FoundNettyTransport extends NettyTransport {
-    private final ClusterName clusterName;
-    private final Injector injector;
-
     private final String[] hostSuffixes;
     private final int[] sslPorts;
     private final String apiKey;
     private final boolean unsafeAllowSelfSigned;
 
+    /**
+     * Returns the settings with new defaults for:
+     *
+     *  - transport.netty.connections_per_node.low = 1
+     *  - transport.netty.connections_per_node.med = 1
+     *  - transport.netty.connections_per_node.high = 1
+     *
+     *  This is done as a reasonable default to avoid opening a lot
+     *  of usually unused connections.
+     */
+    protected static Settings updatedDefaultSettings(Settings settings) {
+        ImmutableSettings.Builder builder = ImmutableSettings.builder();
+        builder.put(settings);
+
+        if(settings.getAsInt("transport.netty.connections_per_node.low", -1) == -1) {
+            builder = builder.put("transport.netty.connections_per_node.low", 1);
+        }
+        if(settings.getAsInt("transport.netty.connections_per_node.med", -1) == -1) {
+            builder = builder.put("transport.netty.connections_per_node.med", 1);
+        }
+        if(settings.getAsInt("transport.netty.connections_per_node.high", -1) == -1) {
+            builder = builder.put("transport.netty.connections_per_node.high", 1);
+        }
+
+        return builder.build();
+    }
+
     @Inject
-    public FoundNettyTransport(Settings settings, ClusterName clusterName, ThreadPool threadPool, NetworkService networkService, Injector injector) {
-        super(settings, threadPool, networkService);
+    public FoundNettyTransport(Settings settings, ThreadPool threadPool, NetworkService networkService, Version version) {
+        super(updatedDefaultSettings(settings), threadPool, networkService, version);
 
         unsafeAllowSelfSigned = settings.getAsBoolean("transport.found.ssl.unsafe_allow_self_signed", false);
         hostSuffixes = settings.getAsArray("transport.found.host-suffixes", new String[]{".foundcluster.com", ".found.no"});
@@ -45,11 +73,7 @@ public class FoundNettyTransport extends NettyTransport {
             sslPorts[i] = ports.get(i);
         }
 
-        this.clusterName = clusterName;
-
-        this.apiKey = settings.get("transport.found.api-key");
-
-        this.injector = injector;
+        this.apiKey = settings.get("transport.found.api-key", "missing-api-key");
     }
 
     void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {

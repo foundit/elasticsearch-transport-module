@@ -1,7 +1,5 @@
 package no.found.elasticsearch.transport.netty;
 
-import org.elasticsearch.common.settings.Settings;
-
 import javax.net.ssl.*;
 import java.net.InetSocketAddress;
 import java.security.KeyManagementException;
@@ -9,6 +7,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
+/**
+ * Collection of SSL-related utils.
+ */
 public class FoundSSLUtils {
     public static FoundSSLHandler getSSLHandler(boolean unsafeAllowSelfSigned, InetSocketAddress inetSocketAddress) throws NoSuchAlgorithmException {
         String hostString = inetSocketAddress.getHostString();
