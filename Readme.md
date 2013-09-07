@@ -1,6 +1,6 @@
 # Found Elasticsearch Transport Module
 
-A transport module that works with Found Elasticsearch.
+A [MIT-licensed](https://github.com/foundit/elasticsearch-transport-module/blob/develop/LICENSE) transport module that works with Found Elasticsearch.
 
 **The transport module is backwards-compatible with the default transport
 module.** This means that it can safely be added as a ``transport.type``,
@@ -27,7 +27,7 @@ and setting the ``transport.type`` setting in Elasticsearch to
 Note: This is not a standard Elasticsearch plugin, it just needs to be on the
 application classpath.
 
-## Configuring an API key.
+## Configuring an API key
 
 In order to use this module, you must configure one or more API-keys. API-keys
 are stored as a list of acceptable keys under ``api_keys`` at the root level
@@ -93,7 +93,7 @@ Client client = new TransportClient(settings)
     .addTransportAddress(new InetSocketTransportAddress("YOUR_CLUSTER_ID-REGION.foundcluster.com", 9343));
 ```
 
-## Example usage:
+## Example usage
 
 ```java
 while(true) {
@@ -111,7 +111,12 @@ while(true) {
 }
 ```
 
-## Complete example:
+## Complete example
 
 A complete, runnable example can be found at
 [https://github.com/foundit/elasticsearch-transport-module-example](https://github.com/foundit/elasticsearch-transport-module-example)
+
+
+## Contributing
+
+Report issues in the [issue tracker](https://github.com/foundit/elasticsearch-transport-module/issues).
