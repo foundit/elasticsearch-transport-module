@@ -1,12 +1,19 @@
 # Found Elasticsearch Transport Module
 
-A [MIT-licensed](https://github.com/foundit/elasticsearch-transport-module/blob/develop/LICENSE) transport module that works with Found Elasticsearch.
+A [MIT-licensed](https://github.com/foundit/elasticsearch-transport-module/blob/develop/LICENSE)
+transport module that works with Found Elasticsearch.
 
 **The transport module is backwards-compatible with the default transport
 module.** This means that it can safely be added as a ``transport.type``,
 and it will only enable its authentication and SSL support when connecting
 to a Found-hosted Elasticsearch cluster. This equals less setting-differences
 between local development, staging and production.
+
+## Versions
+
+Module | Elasticsearch
+--- | ---
+ 1.1.18-SNAPSHOT | 0.90.3
 
 ## Installing
 

@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2013, Found AS.
+ * See LICENSE for details.
+ */
+
 package no.found.elasticsearch.transport
 
 import java.util.concurrent.TimeUnit
