@@ -5,20 +5,21 @@
 
 package no.found.elasticsearch.transport.netty;
 
+import no.found.elasticsearch.transport.netty.ssl.FoundSSLHandler;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.ESLoggerFactory;
-import org.elasticsearch.common.netty.buffer.BigEndianHeapChannelBuffer;
 import org.elasticsearch.common.netty.buffer.ChannelBuffer;
 import org.elasticsearch.common.netty.buffer.ChannelBuffers;
 import org.elasticsearch.common.netty.channel.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.net.InetSocketAddress;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -121,7 +122,7 @@ public class TestFoundSwitchingChannelHandler {
         verify(context).sendDownstream(argument.capture());
 
         DownstreamMessageEvent msgEvent = argument.getValue();
-        assertEquals(BigEndianHeapChannelBuffer.class, msgEvent.getMessage().getClass());
+        assertTrue(ChannelBuffer.class.isAssignableFrom(msgEvent.getMessage().getClass()));
 
         ChannelBuffer buffer = (ChannelBuffer)msgEvent.getMessage();
         assertEquals(new FoundTransportHeader(socketAddress.getHostString(), API_KEY).getHeaderBuffer(), buffer);

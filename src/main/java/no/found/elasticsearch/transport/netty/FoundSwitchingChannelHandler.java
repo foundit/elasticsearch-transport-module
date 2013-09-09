@@ -5,6 +5,7 @@
 
 package no.found.elasticsearch.transport.netty;
 
+import no.found.elasticsearch.transport.netty.ssl.FoundSSLHandler;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.netty.buffer.ChannelBuffer;
 import org.elasticsearch.common.netty.buffer.ChannelBuffers;
@@ -18,6 +19,19 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A {@link ChannelHandler} that can work with both Found Elasticsearch and the
+ * default Elasticsearch transport pipeline.
+ *
+ * For Found Elasticsearch, it adds an SSL handler at the beginning of the pipeline
+ * if it's connecting to a pre-configured SSL-port (which usually should be 9343).
+ * Additionally, it sends a header message that contains identifies and authenticates
+ * the client to the service. The service will then respond with a header response.
+ *
+ * If the header response is "OK" (200 <= status code <= 299), the connection has
+ * been established and the original Elasticsearch transport pipeline handlers are
+ * added to the pipeline and this handler removes itself from the pipeline.
+ */
 public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
     private final ESLogger logger;
     private final ChannelPipelineFactory originalFactory;
@@ -40,6 +54,11 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
         this.apiKey = apiKey;
     }
 
+    /**
+     * Detects if we're connecting to a Found Elasticsearch cluster (using pre-configured
+     * host suffixes) and adds a SSL handler at the beginning of the pipeline if we're connecting
+     * to a SSL-endpoint (using a list of pre-configured ports).
+     */
     @Override
     public synchronized void channelBound(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
         SocketAddress socketAddress = ctx.getChannel().getRemoteAddress();

@@ -29,6 +29,13 @@ public class FoundTransportHeader {
         this.apiKey = apiKey;
     }
 
+    /**
+     * Constructs and returns a new ChannelBuffer with the correct header for the given
+     * cluster and API-key.
+     *
+     * @return The ChannelBuffer containing the header.
+     * @throws IOException
+     */
     public ChannelBuffer getHeaderBuffer() throws IOException {
         byte[] clusterNameBytes = clusterName.getBytes(StandardCharsets.UTF_8);
         int clusterNameLength = clusterNameBytes.length;
@@ -36,21 +43,23 @@ public class FoundTransportHeader {
         byte[] apiKeyBytes = apiKey.getBytes(StandardCharsets.UTF_8);
         int apiKeyLength = apiKeyBytes.length;
 
+        ChannelBuffer headerPayload = ChannelBuffers.wrappedBuffer(
+                getIntBytes(revisionLength),
+                getIntBytes(revision),
+
+                getIntBytes(versionLength),
+                getIntBytes(Version.CURRENT.id),
+
+                getIntBytes(clusterNameLength),
+                clusterNameBytes,
+
+                getIntBytes(apiKeyLength),
+                apiKeyBytes
+        );
+
         return ChannelBuffers.wrappedBuffer(
-            concat(getIntBytes(4 + revisionLength + 4 + versionLength + 4 + clusterNameLength + 4 + apiKeyLength),
-
-                    getIntBytes(revisionLength),
-                    getIntBytes(revision),
-
-                    getIntBytes(versionLength),
-                    getIntBytes(Version.CURRENT.id),
-
-                    getIntBytes(clusterNameLength),
-                    clusterNameBytes,
-
-                    getIntBytes(apiKeyLength),
-                    apiKeyBytes
-            )
+                ChannelBuffers.wrappedBuffer(getIntBytes(headerPayload.readableBytes())),
+                headerPayload
         );
     }
 
@@ -63,22 +72,5 @@ public class FoundTransportHeader {
         bytes[3] = ((byte) i);
 
         return bytes;
-    }
-
-    protected byte[] concat(byte[]... allBytes) {
-        int size = 0;
-        for (byte[] allByte1 : allBytes) {
-            size += allByte1.length;
-        }
-
-        byte[] result = new byte[size];
-        int current = 0;
-
-        for (byte[] allByte : allBytes) {
-            for (byte anAllByte : allByte) {
-                result[current++] = anAllByte;
-            }
-        }
-        return result;
     }
 }

@@ -5,6 +5,8 @@
 
 package no.found.elasticsearch.transport.netty;
 
+import no.found.elasticsearch.transport.netty.ssl.FoundSSLHandler;
+
 import javax.net.ssl.*;
 import java.net.InetSocketAddress;
 import java.security.KeyManagementException;

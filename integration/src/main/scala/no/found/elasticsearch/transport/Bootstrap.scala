@@ -16,7 +16,7 @@ import org.elasticsearch.client.Requests
 object Bootstrap extends App {
   val settings = ImmutableSettings.settingsBuilder()
     //.put("cluster.name", "20ef6fed67864b4aba920f3a2c45d7f3")
-    //.put("client.transport.ignore_cluster_name", false)
+    .put("client.transport.ignore_cluster_name", true)
 
     .put("transport.type", "no.found.elasticsearch.transport.netty.FoundNettyTransportModule")
     .put("transport.found.host-suffixes", ".localhacks.com,.foundcluster.com")
@@ -30,8 +30,8 @@ object Bootstrap extends App {
     .build()
 
   var client = new TransportClient(settings)
-    .addTransportAddress(new InetSocketTransportAddress("20ef6fed67864b4aba920f3a2c45d7f3-local-1.localhack2s.com", 9300))
-    //.addTransportAddress(new InetSocketTransportAddress("92e121b43d8eb1e2be00992154ecfa3c-eu-west-1.foundcluster.com", 9343))
+    //.addTransportAddress(new InetSocketTransportAddress("20ef6fed67864b4aba920f3a2c45d7f3-local-1.localhacks.com", 9300))
+    .addTransportAddress(new InetSocketTransportAddress("92e121b43d8eb1e2be00992154ecfa3c-eu-west-1.foundcluster.com", 9343))
 
   while(true) {
     try {
