@@ -121,7 +121,7 @@ public class FoundSSLUtils {
                         }
                     }
 
-                    throw new CertificateException("No name matching " + hostString + " found");
+                    throw new CertificateException("No name matching [" + hostString + "] found");
                 }
                 @Override
                 public X509Certificate[] getAcceptedIssuers() {
