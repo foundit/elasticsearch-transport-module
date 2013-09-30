@@ -124,6 +124,16 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
 
                 for(MessageEvent event: pendingEvents) ctx.sendDownstream(event);
                 pendingEvents.clear();
+            } else if(revision == -1) {
+                if(buffered.readableBytes() < payloadLength + 4) {
+                    return;
+                }
+                buffered.skipBytes(8);
+
+                handleGenericResponse(ctx, payloadLength);
+
+                for(MessageEvent event: pendingEvents) ctx.sendDownstream(event);
+                pendingEvents.clear();
             } else {
                 handleUnknownRevisionResponse(ctx);
                 pendingEvents.clear();
@@ -173,6 +183,18 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
         ChannelBuffer remaining = buffered.slice();
         if(remaining.readableBytes() > 0)
             ctx.sendUpstream(new UpstreamMessageEvent(ctx.getChannel(), remaining, ctx.getChannel().getRemoteAddress()));
+    }
+
+    private void handleGenericResponse(ChannelHandlerContext ctx, int payloadLength) throws Exception {
+        int code = buffered.readInt();
+
+        int descriptionLength = buffered.readInt();
+        byte[] descBytes = new byte[descriptionLength];
+        buffered.readBytes(descBytes, 0, descBytes.length);
+
+        String description = new String(descBytes, StandardCharsets.UTF_8);
+
+        logger.error("Unable to connect to Found Elasticsearch: [{}]: [{}]", code, description);
     }
 
     @Override
