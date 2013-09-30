@@ -13,6 +13,7 @@ between local development, staging and production.
 
 Module | Elasticsearch
 --- | ---
+ 1.1.19-SNAPSHOT | 0.90.3 -> master
  1.1.18-SNAPSHOT | 0.90.3
 
 ## Installing
@@ -23,7 +24,7 @@ To install, add a dependency to this module in your build system :
     <dependency>
         <groupId>no.found.elasticsearch</groupId>
         <artifactId>elasticsearch-transport-module</artifactId>
-        <version>1.1.18-SNAPSHOT</version>
+        <version>1.1.19-SNAPSHOT</version>
     </dependency>
 ```
 
