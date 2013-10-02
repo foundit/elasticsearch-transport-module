@@ -10,6 +10,8 @@ import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.netty.buffer.ChannelBuffer;
 import org.elasticsearch.common.netty.buffer.ChannelBuffers;
 import org.elasticsearch.common.netty.channel.*;
+import org.elasticsearch.common.netty.util.HashedWheelTimer;
+import org.elasticsearch.common.netty.util.Timer;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -38,16 +40,19 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
     private final String[] hostSuffixes;
     private final int[] sslPorts;
     private final String apiKey;
+    private final boolean enableConnectionKeepAlive;
     private final boolean unsafeAllowSelfSigned;
 
     List<MessageEvent> pendingEvents = new ArrayList<MessageEvent>();
     ChannelBuffer buffered = ChannelBuffers.EMPTY_BUFFER;
     boolean isFoundCluster = false;
+    Timer timer = new HashedWheelTimer();
 
-    public FoundSwitchingChannelHandler(ESLogger logger, ChannelPipelineFactory originalFactory, boolean unsafeAllowSelfSigned, String[] hostSuffixes, int[] sslPorts, String apiKey) {
+    public FoundSwitchingChannelHandler(ESLogger logger, ChannelPipelineFactory originalFactory, boolean enableConnectionKeepAlive, boolean unsafeAllowSelfSigned, String[] hostSuffixes, int[] sslPorts, String apiKey) {
         this.logger = logger;
         this.originalFactory = originalFactory;
 
+        this.enableConnectionKeepAlive = enableConnectionKeepAlive;
         this.unsafeAllowSelfSigned = unsafeAllowSelfSigned;
         this.hostSuffixes = hostSuffixes;
         this.sslPorts = sslPorts;
@@ -169,6 +174,8 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
         ctx.getPipeline().remove(this);
 
         final ChannelPipeline pipeline = originalFactory.getPipeline();
+
+        if(enableConnectionKeepAlive) ctx.getPipeline().addLast("connection-keep-alive", new ConnectionKeepAliveHandler(timer));
 
         while(true) {
             ChannelHandler handler = pipeline.getFirst();

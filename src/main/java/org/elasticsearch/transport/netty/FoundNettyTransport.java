@@ -30,6 +30,7 @@ public class FoundNettyTransport extends NettyTransport {
     private final int[] sslPorts;
     private final String apiKey;
     private final boolean unsafeAllowSelfSigned;
+    private final Boolean enableConnectionKeepAlive;
 
     /**
      * Returns the settings with new defaults for:
@@ -62,6 +63,7 @@ public class FoundNettyTransport extends NettyTransport {
     public FoundNettyTransport(Settings settings, ThreadPool threadPool, NetworkService networkService, Version version) {
         super(updatedDefaultSettings(settings), threadPool, networkService, version);
 
+        enableConnectionKeepAlive = settings.getAsBoolean("transport.found.connection-keep-alive", true);
         unsafeAllowSelfSigned = settings.getAsBoolean("transport.found.ssl.unsafe_allow_self_signed", false);
         hostSuffixes = settings.getAsArray("transport.found.host-suffixes", new String[]{".foundcluster.com", ".found.no"});
 
@@ -102,7 +104,7 @@ public class FoundNettyTransport extends NettyTransport {
             clientBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
                 @Override
                 public ChannelPipeline getPipeline() throws Exception {
-                    return Channels.pipeline(new FoundSwitchingChannelHandler(logger, originalFactory, unsafeAllowSelfSigned, hostSuffixes, sslPorts, apiKey));
+                    return Channels.pipeline(new FoundSwitchingChannelHandler(logger, originalFactory, enableConnectionKeepAlive, unsafeAllowSelfSigned, hostSuffixes, sslPorts, apiKey));
                 }
             });
 
