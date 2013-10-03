@@ -79,6 +79,9 @@ New settings introduced by this module:
  certificates when using SSL. This is unsafe and allows for MITM-attacks, but
  may be useful for testing. Defaults to ``false``.
 
+*  ``transport.found.connection-keep-alive-interval``: The interval in which to send
+ keep-alive messages. Defaults to ``20s``. Set to ``0`` to disable.
+
 ## Example configuration
 
 ```java

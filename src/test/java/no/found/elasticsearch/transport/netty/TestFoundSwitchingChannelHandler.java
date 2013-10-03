@@ -40,6 +40,7 @@ public class TestFoundSwitchingChannelHandler {
     private final String API_KEY = "my-api-key";
     private final String FOUND_HOST = "test-host";
     private final int SSL_PORT = 9343;
+    private boolean enableConnectionKeepAlive = false;
 
     @Before
     public void setUp() throws Exception {
@@ -70,7 +71,7 @@ public class TestFoundSwitchingChannelHandler {
     }
 
     public FoundSwitchingChannelHandler getChannelHandler(boolean unsafeAllowSelfSigned, String knownHost, int sslPort, String apiKey) {
-        return new FoundSwitchingChannelHandler(logger, originalFactory, unsafeAllowSelfSigned, new String[] {knownHost}, new int[] {sslPort}, apiKey);
+        return new FoundSwitchingChannelHandler(logger, originalFactory, enableConnectionKeepAlive, unsafeAllowSelfSigned, new String[] {knownHost}, new int[] {sslPort}, apiKey);
     }
 
     @Test

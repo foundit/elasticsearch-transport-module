@@ -12,7 +12,9 @@ import org.elasticsearch.common.netty.buffer.ChannelBuffers;
 import org.elasticsearch.common.netty.channel.*;
 import org.elasticsearch.common.netty.util.HashedWheelTimer;
 import org.elasticsearch.common.netty.util.Timer;
+import org.elasticsearch.common.unit.TimeValue;
 
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -40,7 +42,7 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
     private final String[] hostSuffixes;
     private final int[] sslPorts;
     private final String apiKey;
-    private final boolean enableConnectionKeepAlive;
+    private final TimeValue keepAliveInterval;
     private final boolean unsafeAllowSelfSigned;
 
     List<MessageEvent> pendingEvents = new ArrayList<MessageEvent>();
@@ -48,11 +50,11 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
     boolean isFoundCluster = false;
     Timer timer = new HashedWheelTimer();
 
-    public FoundSwitchingChannelHandler(ESLogger logger, ChannelPipelineFactory originalFactory, boolean enableConnectionKeepAlive, boolean unsafeAllowSelfSigned, String[] hostSuffixes, int[] sslPorts, String apiKey) {
+    public FoundSwitchingChannelHandler(ESLogger logger, ChannelPipelineFactory originalFactory, TimeValue keepAliveInterval, boolean unsafeAllowSelfSigned, String[] hostSuffixes, int[] sslPorts, String apiKey) {
         this.logger = logger;
         this.originalFactory = originalFactory;
 
-        this.enableConnectionKeepAlive = enableConnectionKeepAlive;
+        this.keepAliveInterval = keepAliveInterval;
         this.unsafeAllowSelfSigned = unsafeAllowSelfSigned;
         this.hostSuffixes = hostSuffixes;
         this.sslPorts = sslPorts;
@@ -175,7 +177,7 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
 
         final ChannelPipeline pipeline = originalFactory.getPipeline();
 
-        if(enableConnectionKeepAlive) ctx.getPipeline().addLast("connection-keep-alive", new ConnectionKeepAliveHandler(timer));
+        if(keepAliveInterval.millis() > 0) ctx.getPipeline().addLast("connection-keep-alive", new ConnectionKeepAliveHandler(timer, keepAliveInterval));
 
         while(true) {
             ChannelHandler handler = pipeline.getFirst();
@@ -209,7 +211,9 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
         if (e.getCause() instanceof ClosedChannelException) {
             // do nothing
         } else if(e.getCause() instanceof UnresolvedAddressException) {
-            logger.error("Unable to resolve one of the server addresses.");
+            logger.error("Unable to resolve one of the server addresses: [{}]", e.getCause().getMessage());
+        } else if(e.getCause() instanceof ConnectException) {
+            logger.error("Unable to connect: [{}]", e.getCause().getMessage());
         } else if(e.getCause().getMessage() != null && e.getCause().getMessage().contains("Connection reset by peer")) {
             // still do nothing
         } else {

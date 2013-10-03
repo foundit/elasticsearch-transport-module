@@ -14,12 +14,14 @@ import org.elasticsearch.common.netty.channel.*;
 import org.elasticsearch.common.network.NetworkService;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.threadpool.ThreadPool;
 
 import javax.net.ssl.SSLException;
 import java.lang.reflect.Field;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A Transport that replaces the default Netty pipeline with one
@@ -30,7 +32,7 @@ public class FoundNettyTransport extends NettyTransport {
     private final int[] sslPorts;
     private final String apiKey;
     private final boolean unsafeAllowSelfSigned;
-    private final Boolean enableConnectionKeepAlive;
+    private final TimeValue keepAliveInterval;
 
     /**
      * Returns the settings with new defaults for:
@@ -63,7 +65,7 @@ public class FoundNettyTransport extends NettyTransport {
     public FoundNettyTransport(Settings settings, ThreadPool threadPool, NetworkService networkService, Version version) {
         super(updatedDefaultSettings(settings), threadPool, networkService, version);
 
-        enableConnectionKeepAlive = settings.getAsBoolean("transport.found.connection-keep-alive", true);
+        keepAliveInterval = settings.getAsTime("transport.found.connection-keep-alive-interval", new TimeValue(20000, TimeUnit.MILLISECONDS));
         unsafeAllowSelfSigned = settings.getAsBoolean("transport.found.ssl.unsafe_allow_self_signed", false);
         hostSuffixes = settings.getAsArray("transport.found.host-suffixes", new String[]{".foundcluster.com", ".found.no"});
 
@@ -104,7 +106,7 @@ public class FoundNettyTransport extends NettyTransport {
             clientBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
                 @Override
                 public ChannelPipeline getPipeline() throws Exception {
-                    return Channels.pipeline(new FoundSwitchingChannelHandler(logger, originalFactory, enableConnectionKeepAlive, unsafeAllowSelfSigned, hostSuffixes, sslPorts, apiKey));
+                    return Channels.pipeline(new FoundSwitchingChannelHandler(logger, originalFactory, keepAliveInterval, unsafeAllowSelfSigned, hostSuffixes, sslPorts, apiKey));
                 }
             });
 

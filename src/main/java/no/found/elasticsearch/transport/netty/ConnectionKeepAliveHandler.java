@@ -6,15 +6,18 @@ import org.elasticsearch.common.netty.channel.*;
 import org.elasticsearch.common.netty.util.Timeout;
 import org.elasticsearch.common.netty.util.Timer;
 import org.elasticsearch.common.netty.util.TimerTask;
+import org.elasticsearch.common.unit.TimeValue;
 
 import java.util.concurrent.TimeUnit;
 
 public class ConnectionKeepAliveHandler extends SimpleChannelHandler implements LifeCycleAwareChannelHandler {
     private final Timer timer;
+    private final TimeValue keepAliveInterval;
     ChannelBuffer keepAliveBuffer = ChannelBuffers.copiedBuffer(new byte[]{'F', 'K', 0, 0, 0, 0});
 
-    public ConnectionKeepAliveHandler(Timer timer) {
+    public ConnectionKeepAliveHandler(Timer timer, TimeValue keepAliveInterval) {
         this.timer = timer;
+        this.keepAliveInterval = keepAliveInterval;
     }
 
     @Override
@@ -23,8 +26,15 @@ public class ConnectionKeepAliveHandler extends SimpleChannelHandler implements 
     }
 
     private void addTimeoutTask(ChannelHandlerContext ctx) {
-        // TODO: make this configurable?
-        timer.newTimeout(new KeepAliveTimerTask(ctx), 45, TimeUnit.SECONDS);
+        timer.newTimeout(new KeepAliveTimerTask(ctx), 2, TimeUnit.SECONDS);
+    }
+
+    private long lastWrite;
+
+    @Override
+    synchronized public void writeRequested(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
+        super.writeRequested(ctx, e);
+        lastWrite = System.currentTimeMillis();
     }
 
     @Override
@@ -32,7 +42,8 @@ public class ConnectionKeepAliveHandler extends SimpleChannelHandler implements 
     }
 
     @Override
-    public void afterAdd(ChannelHandlerContext channelHandlerContext) throws Exception {
+    synchronized public void afterAdd(ChannelHandlerContext channelHandlerContext) throws Exception {
+        lastWrite = System.currentTimeMillis();
         addTimeoutTask(channelHandlerContext);
     }
 
@@ -58,10 +69,19 @@ public class ConnectionKeepAliveHandler extends SimpleChannelHandler implements 
             ctx.getPipeline().execute(new Runnable() {
                 @Override
                 public void run() {
-                    ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), Channels.future(ctx.getChannel()), keepAliveBuffer, ctx.getChannel().getRemoteAddress()));
+                    send(ctx, new DownstreamMessageEvent(ctx.getChannel(), Channels.future(ctx.getChannel()), keepAliveBuffer, ctx.getChannel().getRemoteAddress()));
                     addTimeoutTask(ctx);
                 }
             });
+        }
+    }
+
+    synchronized private void send(ChannelHandlerContext ctx, DownstreamMessageEvent downstreamMessageEvent) {
+        long now = System.currentTimeMillis();
+
+        if(now - lastWrite > keepAliveInterval.millis()) {
+            lastWrite = now;
+            ctx.sendDownstream(downstreamMessageEvent);
         }
     }
 }

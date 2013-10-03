@@ -33,8 +33,8 @@ import org.elasticsearch.transport.netty.FoundNettyTransport;
  *  a list of Strings under the root level key "api_keys". Defaults to
  *  {@code missing-api-key}</li>
  *
- *  <li>{@code transport.found.connection-keep-alive}: Whether to use connection-level
- *  keep-alive messages when connecting to Found.</li>
+ *  <li>{@code transport.found.connection-keep-alive-interval}: The interval in which to send
+ *  keep-alive messages. Defaults to {@code 20s}. Set to 0 to disable.</li>
  *
  *  <li>{@code transport.found.ssl.unsafe_allow_self_signed}: Whether to accept self-signed
  *  certificates when using SSL. This is unsafe and allows for MITM-attacks, but
