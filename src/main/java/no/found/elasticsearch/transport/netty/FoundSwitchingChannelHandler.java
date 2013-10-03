@@ -42,18 +42,19 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
     private final String[] hostSuffixes;
     private final int[] sslPorts;
     private final String apiKey;
+    private final Timer timer;
     private final TimeValue keepAliveInterval;
     private final boolean unsafeAllowSelfSigned;
 
     List<MessageEvent> pendingEvents = new ArrayList<MessageEvent>();
     ChannelBuffer buffered = ChannelBuffers.EMPTY_BUFFER;
     boolean isFoundCluster = false;
-    Timer timer = new HashedWheelTimer();
 
-    public FoundSwitchingChannelHandler(ESLogger logger, ChannelPipelineFactory originalFactory, TimeValue keepAliveInterval, boolean unsafeAllowSelfSigned, String[] hostSuffixes, int[] sslPorts, String apiKey) {
+    public FoundSwitchingChannelHandler(ESLogger logger, ChannelPipelineFactory originalFactory, Timer timer, TimeValue keepAliveInterval, boolean unsafeAllowSelfSigned, String[] hostSuffixes, int[] sslPorts, String apiKey) {
         this.logger = logger;
         this.originalFactory = originalFactory;
 
+        this.timer = timer;
         this.keepAliveInterval = keepAliveInterval;
         this.unsafeAllowSelfSigned = unsafeAllowSelfSigned;
         this.hostSuffixes = hostSuffixes;

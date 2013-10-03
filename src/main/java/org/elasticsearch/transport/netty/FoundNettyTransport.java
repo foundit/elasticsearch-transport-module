@@ -11,6 +11,8 @@ import org.elasticsearch.Version;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.netty.bootstrap.ClientBootstrap;
 import org.elasticsearch.common.netty.channel.*;
+import org.elasticsearch.common.netty.util.HashedWheelTimer;
+import org.elasticsearch.common.netty.util.Timer;
 import org.elasticsearch.common.network.NetworkService;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
@@ -32,6 +34,7 @@ public class FoundNettyTransport extends NettyTransport {
     private final int[] sslPorts;
     private final String apiKey;
     private final boolean unsafeAllowSelfSigned;
+    private final Timer timer;
     private final TimeValue keepAliveInterval;
 
     /**
@@ -65,6 +68,7 @@ public class FoundNettyTransport extends NettyTransport {
     public FoundNettyTransport(Settings settings, ThreadPool threadPool, NetworkService networkService, Version version) {
         super(updatedDefaultSettings(settings), threadPool, networkService, version);
 
+        timer = new HashedWheelTimer();
         keepAliveInterval = settings.getAsTime("transport.found.connection-keep-alive-interval", new TimeValue(20000, TimeUnit.MILLISECONDS));
         unsafeAllowSelfSigned = settings.getAsBoolean("transport.found.ssl.unsafe_allow_self_signed", false);
         hostSuffixes = settings.getAsArray("transport.found.host-suffixes", new String[]{".foundcluster.com", ".found.no"});
@@ -106,7 +110,7 @@ public class FoundNettyTransport extends NettyTransport {
             clientBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
                 @Override
                 public ChannelPipeline getPipeline() throws Exception {
-                    return Channels.pipeline(new FoundSwitchingChannelHandler(logger, originalFactory, keepAliveInterval, unsafeAllowSelfSigned, hostSuffixes, sslPorts, apiKey));
+                    return Channels.pipeline(new FoundSwitchingChannelHandler(logger, originalFactory, timer, keepAliveInterval, unsafeAllowSelfSigned, hostSuffixes, sslPorts, apiKey));
                 }
             });
 
@@ -114,5 +118,11 @@ public class FoundNettyTransport extends NettyTransport {
         } catch (ReflectiveOperationException roe) {
             logger.error("Unable to update the transport pipeline. Plugin upgrade required.", roe);
         }
+    }
+
+    @Override
+    protected void doStop() throws ElasticSearchException {
+        super.doStop();
+        timer.stop();
     }
 }

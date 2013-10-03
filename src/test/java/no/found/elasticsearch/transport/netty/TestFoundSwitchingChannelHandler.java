@@ -11,6 +11,9 @@ import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.netty.buffer.ChannelBuffer;
 import org.elasticsearch.common.netty.buffer.ChannelBuffers;
 import org.elasticsearch.common.netty.channel.*;
+import org.elasticsearch.common.netty.util.HashedWheelTimer;
+import org.elasticsearch.common.netty.util.Timer;
+import org.elasticsearch.common.unit.TimeValue;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -40,7 +43,8 @@ public class TestFoundSwitchingChannelHandler {
     private final String API_KEY = "my-api-key";
     private final String FOUND_HOST = "test-host";
     private final int SSL_PORT = 9343;
-    private boolean enableConnectionKeepAlive = false;
+    private Timer timer = new HashedWheelTimer();
+    private TimeValue keepAliveInterval = new TimeValue(0);
 
     @Before
     public void setUp() throws Exception {
@@ -71,7 +75,7 @@ public class TestFoundSwitchingChannelHandler {
     }
 
     public FoundSwitchingChannelHandler getChannelHandler(boolean unsafeAllowSelfSigned, String knownHost, int sslPort, String apiKey) {
-        return new FoundSwitchingChannelHandler(logger, originalFactory, enableConnectionKeepAlive, unsafeAllowSelfSigned, new String[] {knownHost}, new int[] {sslPort}, apiKey);
+        return new FoundSwitchingChannelHandler(logger, originalFactory, timer, keepAliveInterval, unsafeAllowSelfSigned, new String[] {knownHost}, new int[] {sslPort}, apiKey);
     }
 
     @Test
