@@ -6,6 +6,7 @@
 package no.found.elasticsearch.transport.netty;
 
 import no.found.elasticsearch.transport.netty.ssl.FoundSSLHandler;
+import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.netty.buffer.ChannelBuffer;
 import org.elasticsearch.common.netty.buffer.ChannelBuffers;
@@ -39,6 +40,8 @@ import java.util.List;
 public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
     private final ESLogger logger;
     private final ChannelPipelineFactory originalFactory;
+
+    private final ClusterName clusterName;
     private final String[] hostSuffixes;
     private final int[] sslPorts;
     private final String apiKey;
@@ -50,10 +53,11 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
     ChannelBuffer buffered = ChannelBuffers.EMPTY_BUFFER;
     boolean isFoundCluster = false;
 
-    public FoundSwitchingChannelHandler(ESLogger logger, ChannelPipelineFactory originalFactory, Timer timer, TimeValue keepAliveInterval, boolean unsafeAllowSelfSigned, String[] hostSuffixes, int[] sslPorts, String apiKey) {
+    public FoundSwitchingChannelHandler(ESLogger logger, ChannelPipelineFactory originalFactory, ClusterName clusterName, Timer timer, TimeValue keepAliveInterval, boolean unsafeAllowSelfSigned, String[] hostSuffixes, int[] sslPorts, String apiKey) {
         this.logger = logger;
         this.originalFactory = originalFactory;
 
+        this.clusterName = clusterName;
         this.timer = timer;
         this.keepAliveInterval = keepAliveInterval;
         this.unsafeAllowSelfSigned = unsafeAllowSelfSigned;
@@ -97,7 +101,7 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
 
             logger.info("Authenticating with Found Elasticsearch at [{}]", ctx.getChannel().getRemoteAddress());
             String remoteHostString = ((InetSocketAddress)ctx.getChannel().getRemoteAddress()).getHostString();
-            ChannelBuffer message = new FoundTransportHeader(remoteHostString, apiKey).getHeaderBuffer();
+            ChannelBuffer message = new FoundTransportHeader(clusterName.value(), apiKey).getHeaderBuffer();
 
             ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), Channels.future(ctx.getChannel()), message, ctx.getChannel().getRemoteAddress()));
         }

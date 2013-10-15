@@ -6,6 +6,7 @@
 package no.found.elasticsearch.transport.netty;
 
 import no.found.elasticsearch.transport.netty.ssl.FoundSSLHandler;
+import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.netty.buffer.ChannelBuffer;
@@ -43,6 +44,7 @@ public class TestFoundSwitchingChannelHandler {
     private final String API_KEY = "my-api-key";
     private final String FOUND_HOST = "test-host";
     private final int SSL_PORT = 9343;
+    private ClusterName clusterName = new ClusterName("test-cluster-name");
     private Timer timer = new HashedWheelTimer();
     private TimeValue keepAliveInterval = new TimeValue(0);
 
@@ -75,7 +77,7 @@ public class TestFoundSwitchingChannelHandler {
     }
 
     public FoundSwitchingChannelHandler getChannelHandler(boolean unsafeAllowSelfSigned, String knownHost, int sslPort, String apiKey) {
-        return new FoundSwitchingChannelHandler(logger, originalFactory, timer, keepAliveInterval, unsafeAllowSelfSigned, new String[] {knownHost}, new int[] {sslPort}, apiKey);
+        return new FoundSwitchingChannelHandler(logger, originalFactory, clusterName, timer, keepAliveInterval, unsafeAllowSelfSigned, new String[] {knownHost}, new int[] {sslPort}, apiKey);
     }
 
     @Test
@@ -130,7 +132,7 @@ public class TestFoundSwitchingChannelHandler {
         assertTrue(ChannelBuffer.class.isAssignableFrom(msgEvent.getMessage().getClass()));
 
         ChannelBuffer buffer = (ChannelBuffer)msgEvent.getMessage();
-        assertEquals(new FoundTransportHeader(socketAddress.getHostString(), API_KEY).getHeaderBuffer(), buffer);
+        assertEquals(new FoundTransportHeader(clusterName.value(), API_KEY).getHeaderBuffer(), buffer);
     }
 
     @Test

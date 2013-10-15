@@ -8,6 +8,7 @@ package org.elasticsearch.transport.netty;
 import no.found.elasticsearch.transport.netty.FoundSwitchingChannelHandler;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.Version;
+import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.netty.bootstrap.ClientBootstrap;
 import org.elasticsearch.common.netty.channel.*;
@@ -36,6 +37,7 @@ public class FoundNettyTransport extends NettyTransport {
     private final boolean unsafeAllowSelfSigned;
     private final Timer timer;
     private final TimeValue keepAliveInterval;
+    private final ClusterName clusterName;
 
     /**
      * Returns the settings with new defaults for:
@@ -65,8 +67,10 @@ public class FoundNettyTransport extends NettyTransport {
     }
 
     @Inject
-    public FoundNettyTransport(Settings settings, ThreadPool threadPool, NetworkService networkService, Version version) {
+    public FoundNettyTransport(Settings settings, ThreadPool threadPool, NetworkService networkService, ClusterName clusterName, Version version) {
         super(updatedDefaultSettings(settings), threadPool, networkService, version);
+
+        this.clusterName = clusterName;
 
         timer = new HashedWheelTimer();
         keepAliveInterval = settings.getAsTime("transport.found.connection-keep-alive-interval", new TimeValue(20000, TimeUnit.MILLISECONDS));
@@ -110,7 +114,7 @@ public class FoundNettyTransport extends NettyTransport {
             clientBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
                 @Override
                 public ChannelPipeline getPipeline() throws Exception {
-                    return Channels.pipeline(new FoundSwitchingChannelHandler(logger, originalFactory, timer, keepAliveInterval, unsafeAllowSelfSigned, hostSuffixes, sslPorts, apiKey));
+                    return Channels.pipeline(new FoundSwitchingChannelHandler(logger, originalFactory, clusterName, timer, keepAliveInterval, unsafeAllowSelfSigned, hostSuffixes, sslPorts, apiKey));
                 }
             });
 
