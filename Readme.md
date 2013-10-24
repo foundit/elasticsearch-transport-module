@@ -14,7 +14,7 @@ between local development, staging and production.
 Elasticsearch | This Module
 --- | ---
  0.90.4 -> 0.90.x | 0.8.0-0905
- 0.20 -> 0.90.3 | 0.8.0-0903
+ 0.20.x -> 0.90.3 | 0.8.0-0903
 
 ### Older versions
 
