@@ -29,7 +29,7 @@ To install, add a dependency to this module in your build system :
     <dependency>
         <groupId>no.found.elasticsearch</groupId>
         <artifactId>elasticsearch-transport-module</artifactId>
-        <version>1.1.19-SNAPSHOT</version>
+        <version>{version-from-the-above-table}</version>
     </dependency>
 ```
 
