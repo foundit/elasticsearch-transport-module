@@ -9,7 +9,7 @@ object Build extends Build {
 
   val transportOrganization = foundOrgnizationPrefix + ".elasticsearch"
   val transportName = "elasticsearch-transport-module"
-  val transportVersion = "0.8.0-0903"
+  val transportVersion = "0.8.1-0903-SNAPSHOT"
 
   var transportDependencies = Seq[ModuleID]()
 
