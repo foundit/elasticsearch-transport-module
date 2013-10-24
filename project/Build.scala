@@ -63,7 +63,7 @@ object Build extends Build {
   ).settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*)
 
   lazy val integration = Project("integration", file("./integration"))
-    .dependsOn(root % "test->test")
+    .dependsOn(root, root % "test->test")
     .settings(Project.defaultSettings : _*)
     .settings(
       organizationName := foundOrganizationName,
