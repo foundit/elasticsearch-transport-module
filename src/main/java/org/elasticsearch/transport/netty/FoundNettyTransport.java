@@ -39,8 +39,8 @@ public class FoundNettyTransport extends NettyTransport {
     private final ClusterName clusterName;
 
     @Inject
-    public FoundNettyTransport(Settings settings, ThreadPool threadPool, NetworkService networkService, ClusterName clusterName, Version version) {
-        super(settings, threadPool, networkService, version);
+    public FoundNettyTransport(Settings settings, ThreadPool threadPool, NetworkService networkService, ClusterName clusterName) {
+        super(settings, threadPool, networkService);
 
         this.clusterName = clusterName;
 
