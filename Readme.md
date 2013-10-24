@@ -97,8 +97,8 @@ Settings settings = ImmutableSettings.settingsBuilder()
     // Create an api key via the console and add it here:
     .put("transport.found.api-key", "YOUR_API_KEY")
 
-    // Used by Elasticsearch:
     .put("cluster.name", "YOUR_CLUSTER_ID")
+
     .put("client.transport.ignore_cluster_name", false)
 
     .build();
