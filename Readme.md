@@ -11,10 +11,10 @@ between local development, staging and production.
 
 ## Versions
 
-Module | Elasticsearch
+Elasticsearch | This Module
 --- | ---
- 1.1.19-SNAPSHOT | 0.90.3 -> master
- 1.1.18-SNAPSHOT | 0.90.3
+ 0.90.3 -> master | 0.8.0-0904
+ 0.20 -> 0.90.3 | 0.8.0-0903
 
 ## Installing
 
