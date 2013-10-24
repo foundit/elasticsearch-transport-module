@@ -22,9 +22,15 @@ object Bootstrap extends App {
     .build()
 
   var client = new TransportClient(settings)
-    .addTransportAddress(new InetSocketTransportAddress(System.getProperty("transport.hostname", "localhost"), Integer.parseInt(System.getProperty("transport.port", "9300"))))
+    .addTransportAddress(new InetSocketTransportAddress(System.getProperty("transport.host", "localhost"), Integer.parseInt(System.getProperty("transport.port", "9300"))))
 
-  while(true) {
+  val healthChecks = Integer.parseInt(System.getProperty("healthchecks", "10"))
+  var count = 0
+  var done = false
+
+  var errors = 0
+
+  while(!done) {
     try {
       val healthRequest = client.admin().cluster().health(Requests.clusterHealthRequest())
       val response = healthRequest.get(100, TimeUnit.SECONDS)
@@ -32,11 +38,19 @@ object Bootstrap extends App {
       println("STATUS: " + response.getStatus)
     } catch {
       case t: Throwable => {
+        errors += 1
         println(t.getMessage)
       }
     }
 
-    Thread.sleep(1000)
+    count += 1
+    if(healthChecks == -1 || count < healthChecks)
+      Thread.sleep(1000)
+    else {
+      done = true
+    }
   }
   client.close()
+
+  System.exit(if(errors == 0) 0 else 1)
 }
