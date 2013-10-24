@@ -13,8 +13,13 @@ between local development, staging and production.
 
 Elasticsearch | This Module
 --- | ---
- 0.90.3 -> master | 0.8.0-0904
+ 0.90.4 -> 0.90.x | 0.8.0-0905
  0.20 -> 0.90.3 | 0.8.0-0903
+
+### Older versions
+
+We do not recommend using an older version unless you have a very good reason.
+Older versions are not guaranteed to work as expected.
 
 ## Installing
 
