@@ -15,7 +15,6 @@ import org.elasticsearch.common.netty.channel.*;
 import org.elasticsearch.common.netty.util.HashedWheelTimer;
 import org.elasticsearch.common.netty.util.Timer;
 import org.elasticsearch.common.network.NetworkService;
-import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.threadpool.ThreadPool;
@@ -39,36 +38,9 @@ public class FoundNettyTransport extends NettyTransport {
     private final TimeValue keepAliveInterval;
     private final ClusterName clusterName;
 
-    /**
-     * Returns the settings with new defaults for:
-     *
-     *  - transport.netty.connections_per_node.low = 1
-     *  - transport.netty.connections_per_node.med = 1
-     *  - transport.netty.connections_per_node.high = 1
-     *
-     *  This is done as a reasonable default to avoid opening a lot
-     *  of usually unused connections.
-     */
-    protected static Settings updatedDefaultSettings(Settings settings) {
-        ImmutableSettings.Builder builder = ImmutableSettings.builder();
-        builder.put(settings);
-
-        if(settings.getAsInt("transport.netty.connections_per_node.low", -1) == -1) {
-            builder = builder.put("transport.netty.connections_per_node.low", 1);
-        }
-        if(settings.getAsInt("transport.netty.connections_per_node.med", -1) == -1) {
-            builder = builder.put("transport.netty.connections_per_node.med", 1);
-        }
-        if(settings.getAsInt("transport.netty.connections_per_node.high", -1) == -1) {
-            builder = builder.put("transport.netty.connections_per_node.high", 1);
-        }
-
-        return builder.build();
-    }
-
     @Inject
     public FoundNettyTransport(Settings settings, ThreadPool threadPool, NetworkService networkService, ClusterName clusterName, Version version) {
-        super(updatedDefaultSettings(settings), threadPool, networkService, version);
+        super(settings, threadPool, networkService, version);
 
         this.clusterName = clusterName;
 
