@@ -65,6 +65,7 @@ public class FoundNettyTransport extends NettyTransport {
         this.apiKey = settings.get("transport.found.api-key", "missing-api-key");
     }
 
+    @Override
     void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
         if(e.getCause() instanceof SSLException) {
             return;
