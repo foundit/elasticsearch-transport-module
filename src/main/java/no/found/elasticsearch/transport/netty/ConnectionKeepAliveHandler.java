@@ -20,10 +20,6 @@ public class ConnectionKeepAliveHandler extends SimpleChannelHandler implements 
         this.keepAliveInterval = keepAliveInterval;
     }
 
-    @Override
-    public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
-        super.channelDisconnected(ctx, e);
-    }
 
     private void addTimeoutTask(ChannelHandlerContext ctx) {
         timer.newTimeout(new KeepAliveTimerTask(ctx), 2, TimeUnit.SECONDS);
