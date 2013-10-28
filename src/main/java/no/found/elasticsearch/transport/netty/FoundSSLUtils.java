@@ -17,7 +17,9 @@ import java.security.cert.X509Certificate;
 /**
  * Collection of SSL-related utils.
  */
-public class FoundSSLUtils {
+public final class FoundSSLUtils {
+    private FoundSSLUtils() {}
+
     public static FoundSSLHandler getSSLHandler(boolean unsafeAllowSelfSigned, InetSocketAddress inetSocketAddress) throws NoSuchAlgorithmException {
         String hostString = inetSocketAddress.getHostString();
 
