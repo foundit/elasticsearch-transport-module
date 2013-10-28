@@ -7,6 +7,7 @@ package no.found.elasticsearch.transport.netty;
 
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.common.inject.AbstractModule;
+import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.transport.Transport;
 import org.elasticsearch.transport.netty.FoundNettyTransport;
@@ -87,10 +88,11 @@ import org.elasticsearch.transport.netty.FoundNettyTransport;
  */
 public class FoundNettyTransportModule extends AbstractModule {
 
-    private final Settings settings;
-
     public FoundNettyTransportModule(Settings settings) {
-        this.settings = settings;
+        if (settings.getAsBoolean("client.transport.ignore_cluster_name", false)) {
+            Loggers.getLogger(getClass(), settings).warn("client.transport.ignore_cluster_name has been set to true! " +
+                        "This is not recommended in combination with found elasticsearch transport module.");
+		}
 
         if(settings.getAsBoolean("client.transport.sniff", false)) {
             throw new ElasticSearchException("The transport client setting \"client.transport.sniff\" is [true], which is not supported by this transport.");
