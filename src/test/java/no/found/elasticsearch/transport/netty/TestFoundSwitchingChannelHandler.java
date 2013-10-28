@@ -41,9 +41,9 @@ public class TestFoundSwitchingChannelHandler {
     private ChannelHandlerContext originalContext;
     private InetSocketAddress socketAddress;
 
-    private final String API_KEY = "my-api-key";
-    private final String FOUND_HOST = "test-host";
-    private final int SSL_PORT = 9343;
+    private static final String API_KEY = "my-api-key";
+    private static final String FOUND_HOST = "test-host";
+    private static final int SSL_PORT = 9343;
     private ClusterName clusterName = new ClusterName("test-cluster-name");
     private Timer timer = new HashedWheelTimer();
     private TimeValue keepAliveInterval = new TimeValue(0);
