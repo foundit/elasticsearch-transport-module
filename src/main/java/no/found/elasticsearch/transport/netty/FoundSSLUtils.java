@@ -6,6 +6,7 @@
 package no.found.elasticsearch.transport.netty;
 
 import no.found.elasticsearch.transport.netty.ssl.FoundSSLHandler;
+import org.elasticsearch.common.collect.Sets;
 
 import javax.net.ssl.*;
 import java.net.InetSocketAddress;
@@ -13,6 +14,7 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Set;
 
 /**
  * Collection of SSL-related utils.
@@ -23,8 +25,9 @@ public class FoundSSLUtils {
 
         SSLEngine engine = createSslEngine(unsafeAllowSelfSigned, inetSocketAddress, hostString);
 
-        engine.setEnabledCipherSuites(new String[] {
-                "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256",
+        Set supported = Sets.newHashSet(engine.getSupportedCipherSuites());
+
+        Set preferred = Sets.newHashSet("TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256",
                 "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
                 "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256",
                 "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
@@ -79,8 +82,13 @@ public class FoundSSLUtils {
                 "SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA",
                 "SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA",
                 "SSL_RSA_WITH_RC4_128_MD5",
-                "TLS_EMPTY_RENEGOTIATION_INFO_SCSV"
-        });
+                "TLS_EMPTY_RENEGOTIATION_INFO_SCSV");
+
+        Set<String> usable = Sets.intersection(preferred, supported);
+
+        String[] usableArray = usable.toArray(new String[usable.size()]);
+
+        engine.setEnabledCipherSuites(usableArray);
         engine.setUseClientMode(true);
 
         SSLParameters sslParams = new SSLParameters();
