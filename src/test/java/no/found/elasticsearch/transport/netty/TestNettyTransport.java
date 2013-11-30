@@ -31,7 +31,6 @@ public class TestNettyTransport {
 
         ModulesBuilder modules = new ModulesBuilder();
 
-        modules.add(new Version.Module(Version.CURRENT));
         modules.add(new SettingsModule(settings));
         modules.add(new ClusterNameModule(settings));
         modules.add(new TransportModule(settings));
