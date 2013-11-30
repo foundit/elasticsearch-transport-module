@@ -88,7 +88,9 @@ public class FoundSSLUtils {
 
         String[] usableArray = usable.toArray(new String[usable.size()]);
 
-        engine.setEnabledCipherSuites(usableArray);
+        if(usableArray.length > 0) {
+            engine.setEnabledCipherSuites(usableArray);
+        }
         engine.setUseClientMode(true);
 
         SSLParameters sslParams = new SSLParameters();
