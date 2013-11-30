@@ -15,6 +15,11 @@ Elasticsearch | This Module
 --- | ---
  0.90.3 -> 0.90.x | 0.8.1-0907
  0.20.x -> 0.90.2 | 0.8.1-0902
+ 
+### Changes
+
+0.8.1 -> Fixes an issue where Heroku users were unable to use the transport module
+    due to a too narrow cipher suite selection.
 
 ### Older versions
 
