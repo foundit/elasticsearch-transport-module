@@ -92,6 +92,13 @@ New settings introduced by this module:
 *  ``transport.found.connection-keep-alive-interval``: The interval in which to send
  keep-alive messages. Defaults to ``20s``. Set to ``0`` to disable.
 
+## Recommended tweaks to existing settings:
+
+We recommend setting ``client.transport.nodes_sampler_interval`` to ``30s`` and setting 
+``client.transport.ping_timeout`` to ``30s`` when using Elasticsearch over non-local networks (this also goes for deployments in the same Amazon EC2 region, as the connections may be routed across a regions availability zones).
+
+Not doing so may greatly increase the number of disconnects and reconnects due to intermittent slow routers / congested networks / garbage collection and a host of other transient problems.
+
 ## Example configuration
 
 ```java
@@ -105,6 +112,8 @@ Settings settings = ImmutableSettings.settingsBuilder()
     .put("cluster.name", "YOUR_CLUSTER_ID")
 
     .put("client.transport.ignore_cluster_name", false)
+    .put("client.transport.nodes_sampler_interval", "30s")
+    .put("client.transport.ping_timeout", "30s")
 
     .build();
 
