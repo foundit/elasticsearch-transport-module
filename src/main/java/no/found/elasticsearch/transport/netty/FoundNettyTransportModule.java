@@ -5,7 +5,7 @@
 
 package no.found.elasticsearch.transport.netty;
 
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.common.inject.AbstractModule;
 import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.settings.Settings;
@@ -95,7 +95,7 @@ public class FoundNettyTransportModule extends AbstractModule {
 		}
 
         if(settings.getAsBoolean("client.transport.sniff", false)) {
-            throw new ElasticSearchException("The transport client setting \"client.transport.sniff\" is [true], which is not supported by this transport.");
+            throw new ElasticsearchException("The transport client setting \"client.transport.sniff\" is [true], which is not supported by this transport.");
         }
     }
 

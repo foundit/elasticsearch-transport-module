@@ -6,7 +6,7 @@
 package org.elasticsearch.transport.netty;
 
 import no.found.elasticsearch.transport.netty.FoundSwitchingChannelHandler;
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.Version;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.common.inject.Inject;
@@ -74,7 +74,7 @@ public class FoundNettyTransport extends NettyTransport {
     }
 
     @Override
-    protected void doStart() throws ElasticSearchException {
+    protected void doStart() throws ElasticsearchException {
         super.doStart();
 
         try {
@@ -98,7 +98,7 @@ public class FoundNettyTransport extends NettyTransport {
     }
 
     @Override
-    protected void doStop() throws ElasticSearchException {
+    protected void doStop() throws ElasticsearchException {
         super.doStop();
         timer.stop();
     }
