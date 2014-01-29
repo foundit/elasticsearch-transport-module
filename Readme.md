@@ -13,6 +13,7 @@ between local development, staging and production.
 
 Elasticsearch | This Module
 --- | ---
+ 1.0.0.RC1 -> 1.0.x | 0.8.2-1000
  0.90.3 -> 0.90.x | 0.8.1-0907
  0.20.x -> 0.90.2 | 0.8.1-0902
 
