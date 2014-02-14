@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 public class ConnectionKeepAliveHandler extends SimpleChannelHandler implements LifeCycleAwareChannelHandler {
     private final Timer timer;
     private final TimeValue keepAliveInterval;
+    private Timeout currentTimeout;
     ChannelBuffer keepAliveBuffer = ChannelBuffers.copiedBuffer(new byte[]{'F', 'K', 0, 0, 0, 0});
 
     public ConnectionKeepAliveHandler(Timer timer, TimeValue keepAliveInterval) {
@@ -20,13 +21,12 @@ public class ConnectionKeepAliveHandler extends SimpleChannelHandler implements 
         this.keepAliveInterval = keepAliveInterval;
     }
 
-    @Override
-    public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
-        super.channelDisconnected(ctx, e);
-    }
 
     private void addTimeoutTask(ChannelHandlerContext ctx) {
-        timer.newTimeout(new KeepAliveTimerTask(ctx), 2, TimeUnit.SECONDS);
+        if(currentTimeout != null && !currentTimeout.isCancelled() && !currentTimeout.isExpired()) {
+            currentTimeout.cancel();
+        }
+        currentTimeout = timer.newTimeout(new KeepAliveTimerTask(ctx), 2, TimeUnit.SECONDS);
     }
 
     private long lastWrite;
@@ -53,6 +53,9 @@ public class ConnectionKeepAliveHandler extends SimpleChannelHandler implements 
 
     @Override
     public void afterRemove(ChannelHandlerContext channelHandlerContext) throws Exception {
+        if(currentTimeout != null && !currentTimeout.isCancelled() && !currentTimeout.isExpired()) {
+            currentTimeout.cancel();
+        }
     }
 
     class KeepAliveTimerTask implements TimerTask {

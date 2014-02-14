@@ -34,7 +34,7 @@ public class FoundNettyTransport extends NettyTransport {
     private final int[] sslPorts;
     private final String apiKey;
     private final boolean unsafeAllowSelfSigned;
-    private final Timer timer;
+    private static final Timer timer = new HashedWheelTimer();
     private final TimeValue keepAliveInterval;
     private final ClusterName clusterName;
 
@@ -44,7 +44,6 @@ public class FoundNettyTransport extends NettyTransport {
 
         this.clusterName = clusterName;
 
-        timer = new HashedWheelTimer();
         keepAliveInterval = settings.getAsTime("transport.found.connection-keep-alive-interval", new TimeValue(20000, TimeUnit.MILLISECONDS));
         unsafeAllowSelfSigned = settings.getAsBoolean("transport.found.ssl.unsafe_allow_self_signed", false);
         hostSuffixes = settings.getAsArray("transport.found.host-suffixes", new String[]{".foundcluster.com", ".found.no"});
