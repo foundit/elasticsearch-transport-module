@@ -99,6 +99,5 @@ public class FoundNettyTransport extends NettyTransport {
     @Override
     protected void doStop() throws ElasticSearchException {
         super.doStop();
-        timer.stop();
     }
 }
