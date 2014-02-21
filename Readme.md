@@ -13,11 +13,14 @@ between local development, staging and production.
 
 Elasticsearch | This Module
 --- | ---
- 1.0.0 -> 1.0.x | 0.8.3-1000
- 0.90.3 -> 0.90.x | 0.8.3-0907
- 0.20.x -> 0.90.2 | 0.8.3-0902
+1.0.0 -> 1.0.x | 0.8.4-1000
+0.90.3 -> 0.90.x | 0.8.4-0907
+0.20.x -> 0.90.2 | 0.8.4-0902
 
 ### Changes
+
+0.8.4 -> Fix a bug caused by stopping the re-used timers that showed up if the
+    Transport Client was restarted.
 
 0.8.3 -> Attempt to re-use timers and cancel timeouts when reconnecting.
 
