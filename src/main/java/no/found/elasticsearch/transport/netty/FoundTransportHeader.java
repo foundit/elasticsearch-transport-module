@@ -23,6 +23,7 @@ public class FoundTransportHeader {
     private static final int revision = 1;
 
     private static final int versionLength = 4;
+    private static final int moduleVersionLength = 4;
 
     public FoundTransportHeader(String clusterName, String apiKey) {
         this.clusterName = clusterName;
@@ -47,8 +48,9 @@ public class FoundTransportHeader {
                 getIntBytes(revisionLength),
                 getIntBytes(revision),
 
-                getIntBytes(versionLength),
+                getIntBytes(versionLength + moduleVersionLength),
                 getIntBytes(Version.CURRENT.id),
+                getIntBytes(FoundModuleVersion.CURRENT.id),
 
                 getIntBytes(clusterNameLength),
                 clusterNameBytes,
