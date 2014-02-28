@@ -24,8 +24,9 @@ public class TestFoundTransportHeader {
         assertEquals(4, headerBuffer.readInt()); // revision size
         assertEquals(1, headerBuffer.readInt()); // revision
 
-        assertEquals(4, headerBuffer.readInt()); // version size
+        assertEquals(8, headerBuffer.readInt()); // version size + found module version size
         assertEquals(Version.CURRENT.id, headerBuffer.readInt());
+        assertEquals(FoundModuleVersion.CURRENT.id, headerBuffer.readInt());
 
         assertEquals(clusterName.length(), headerBuffer.readInt()); // cluster name size
         assertArrayEquals(clusterName.getBytes(StandardCharsets.UTF_8), headerBuffer.readBytes(clusterName.length()).array()); // cluster name
