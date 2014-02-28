@@ -21,7 +21,7 @@ public class FoundModuleVersion {
     public static final int V_0_8_5_0902_ID = /*000*/8050902;
     public static final FoundModuleVersion V_0_8_5_0902 = new FoundModuleVersion(V_0_8_5_0902_ID);
 
-    public static final FoundModuleVersion CURRENT = V_0_8_5_1000;
+    public static final FoundModuleVersion CURRENT = V_0_8_5_0907;
 
     public final int id;
     public final byte major;
