@@ -21,7 +21,16 @@ public class FoundModuleVersion {
     public static final int V_0_8_5_0902_ID = /*000*/8050902;
     public static final FoundModuleVersion V_0_8_5_0902 = new FoundModuleVersion(V_0_8_5_0902_ID);
 
-    public static final FoundModuleVersion CURRENT = V_0_8_5_0902;
+    public static final int V_0_8_6_1000_ID = /*000*/8061000;
+    public static final FoundModuleVersion V_0_8_6_1000 = new FoundModuleVersion(V_0_8_6_1000_ID);
+
+    public static final int V_0_8_6_0907_ID = /*000*/8060907;
+    public static final FoundModuleVersion V_0_8_6_0907 = new FoundModuleVersion(V_0_8_6_0907_ID);
+
+    public static final int V_0_8_6_0902_ID = /*000*/8060902;
+    public static final FoundModuleVersion V_0_8_6_0902 = new FoundModuleVersion(V_0_8_6_0902_ID);
+
+    public static final FoundModuleVersion CURRENT = V_0_8_6_0902;
 
     public final int id;
     public final byte major;
