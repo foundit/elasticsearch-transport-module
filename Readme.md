@@ -13,11 +13,14 @@ between local development, staging and production.
 
 Elasticsearch | This Module
 --- | ---
- 1.0.0 -> 1.0.x | 0.8.4-1000
- 0.90.3 -> 0.90.x | 0.8.4-0907
- 0.20.x -> 0.90.2 | 0.8.4-0902
+1.0.0 -> 1.0.x | 0.8.5-1000
+0.90.3 -> 0.90.x | 0.8.5-0907
+0.20.x -> 0.90.2 | 0.8.5-0902
 
 ### Changes
+
+0.8.5 -> Sends the current transport module version to the server along with the
+    current Elasticsearch version.
 
 0.8.4 -> Fix a bug caused by stopping the re-used timers that showed up if the
     Transport Client was restarted.
