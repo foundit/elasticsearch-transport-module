@@ -11,7 +11,6 @@ import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.netty.buffer.ChannelBuffer;
 import org.elasticsearch.common.netty.buffer.ChannelBuffers;
 import org.elasticsearch.common.netty.channel.*;
-import org.elasticsearch.common.netty.util.HashedWheelTimer;
 import org.elasticsearch.common.netty.util.Timer;
 import org.elasticsearch.common.unit.TimeValue;
 
@@ -21,8 +20,6 @@ import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.UnresolvedAddressException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * A {@link ChannelHandler} that can work with both Found Elasticsearch and the
@@ -49,9 +46,9 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
     private final TimeValue keepAliveInterval;
     private final boolean unsafeAllowSelfSigned;
 
-    List<MessageEvent> pendingEvents = new ArrayList<MessageEvent>();
     ChannelBuffer buffered = ChannelBuffers.EMPTY_BUFFER;
     boolean isFoundCluster = false;
+    boolean handshakeComplete = false;
 
     public FoundSwitchingChannelHandler(ESLogger logger, ChannelPipelineFactory originalFactory, ClusterName clusterName, Timer timer, TimeValue keepAliveInterval, boolean unsafeAllowSelfSigned, String[] hostSuffixes, int[] sslPorts, String apiKey) {
         this.logger = logger;
@@ -96,26 +93,22 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
     @Override
     public synchronized void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
         super.channelConnected(ctx, e);
-        if(isFoundCluster) {
-            ctx.sendUpstream(e);
 
+        if(isFoundCluster) {
             logger.info("Authenticating with Found Elasticsearch at [{}]", ctx.getChannel().getRemoteAddress());
-            String remoteHostString = ((InetSocketAddress)ctx.getChannel().getRemoteAddress()).getHostString();
             ChannelBuffer message = new FoundTransportHeader(clusterName.value(), apiKey).getHeaderBuffer();
 
-            ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), Channels.future(ctx.getChannel()), message, ctx.getChannel().getRemoteAddress()));
+            ctx.getChannel().write(message);
         }
     }
 
     @Override
     public synchronized void writeRequested(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        pendingEvents.add(e);
+        super.writeRequested(ctx, e);
     }
 
     @Override
     public synchronized void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        super.messageReceived(ctx, e);
-
         if(e.getMessage() instanceof ChannelBuffer) {
             ChannelBuffer newBuffer = (ChannelBuffer)e.getMessage();
             buffered = ChannelBuffers.copiedBuffer(buffered, newBuffer);
@@ -126,30 +119,28 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
             int payloadLength = buffered.getInt(0);
             int revision = buffered.getInt(4);
 
-            if(revision == 1) {
+            if(revision == 1 || revision == -1) {
                 if(buffered.readableBytes() < payloadLength + 4) {
                     return;
                 }
                 buffered.skipBytes(8);
 
-                handleRevision1Response(ctx, payloadLength);
-
-                for(MessageEvent event: pendingEvents) ctx.sendDownstream(event);
-                pendingEvents.clear();
-            } else if(revision == -1) {
-                if(buffered.readableBytes() < payloadLength + 4) {
+                if(revision == 1) {
+                    handleRevision1Response(ctx, payloadLength);
+                } else {
+                    handleGenericResponse(ctx, payloadLength);
                     return;
                 }
-                buffered.skipBytes(8);
-
-                handleGenericResponse(ctx, payloadLength);
-
-                for(MessageEvent event: pendingEvents) ctx.sendDownstream(event);
-                pendingEvents.clear();
             } else {
                 handleUnknownRevisionResponse(ctx);
-                pendingEvents.clear();
+                return;
             }
+
+            handshakeComplete = true;
+
+            ChannelBuffer remaining = buffered.slice();
+            if(remaining.readableBytes() > 0)
+                ctx.sendUpstream(new UpstreamMessageEvent(ctx.getChannel(), remaining, ctx.getChannel().getRemoteAddress()));
         }
     }
 
@@ -182,7 +173,8 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
 
         final ChannelPipeline pipeline = originalFactory.getPipeline();
 
-        if(keepAliveInterval.millis() > 0) ctx.getPipeline().addLast("connection-keep-alive", new ConnectionKeepAliveHandler(timer, keepAliveInterval));
+        if(keepAliveInterval.millis() > 0)
+            ctx.getPipeline().addLast("connection-keep-alive", new ConnectionKeepAliveHandler(timer, keepAliveInterval));
 
         while(true) {
             ChannelHandler handler = pipeline.getFirst();
@@ -193,10 +185,6 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
             ctx.getPipeline().addLast(handlerContext.getName(), handler);
             pipeline.remove(handler);
         }
-
-        ChannelBuffer remaining = buffered.slice();
-        if(remaining.readableBytes() > 0)
-            ctx.sendUpstream(new UpstreamMessageEvent(ctx.getChannel(), remaining, ctx.getChannel().getRemoteAddress()));
     }
 
     private void handleGenericResponse(ChannelHandlerContext ctx, int payloadLength) throws Exception {
