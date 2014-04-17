@@ -34,10 +34,8 @@ import java.nio.charset.StandardCharsets;
  * been established and the original Elasticsearch transport pipeline handlers are
  * added to the pipeline and this handler removes itself from the pipeline.
  */
-public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
+public class FoundAuthenticatingChannelHandler extends SimpleChannelHandler {
     private final ESLogger logger;
-    private final ChannelPipelineFactory originalFactory;
-
     private final ClusterName clusterName;
     private final String[] hostSuffixes;
     private final int[] sslPorts;
@@ -50,9 +48,8 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
     boolean isFoundCluster = false;
     boolean handshakeComplete = false;
 
-    public FoundSwitchingChannelHandler(ESLogger logger, ChannelPipelineFactory originalFactory, ClusterName clusterName, Timer timer, TimeValue keepAliveInterval, boolean unsafeAllowSelfSigned, String[] hostSuffixes, int[] sslPorts, String apiKey) {
+    public FoundAuthenticatingChannelHandler(ESLogger logger, ClusterName clusterName, Timer timer, TimeValue keepAliveInterval, boolean unsafeAllowSelfSigned, String[] hostSuffixes, int[] sslPorts, String apiKey) {
         this.logger = logger;
-        this.originalFactory = originalFactory;
 
         this.clusterName = clusterName;
         this.timer = timer;
@@ -69,7 +66,7 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
      * to a SSL-endpoint (using a list of pre-configured ports).
      */
     @Override
-    public synchronized void channelBound(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
+    public void channelBound(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
         SocketAddress socketAddress = ctx.getChannel().getRemoteAddress();
         if(socketAddress instanceof InetSocketAddress) {
             InetSocketAddress inetSocketAddress = (InetSocketAddress)socketAddress;
@@ -91,7 +88,7 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
     }
 
     @Override
-    public synchronized void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
+    public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
         super.channelConnected(ctx, e);
 
         if(isFoundCluster) {
@@ -102,55 +99,63 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
         }
     }
 
-    @Override
-    public synchronized void writeRequested(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        super.writeRequested(ctx, e);
-    }
 
     @Override
-    public synchronized void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        if(e.getMessage() instanceof ChannelBuffer) {
-            ChannelBuffer newBuffer = (ChannelBuffer)e.getMessage();
-            buffered = ChannelBuffers.copiedBuffer(buffered, newBuffer);
+    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
+        if(handshakeComplete) {
+            super.messageReceived(ctx, e);
+        } else {
+            if (e.getMessage() instanceof ChannelBuffer) {
+                ChannelBuffer newBuffer = (ChannelBuffer) e.getMessage();
+                buffered = ChannelBuffers.copiedBuffer(buffered, newBuffer);
 
-            if(buffered.readableBytes() < 8) {
-                return;
-            }
-            int payloadLength = buffered.getInt(0);
-            int revision = buffered.getInt(4);
-
-            if(revision == 1 || revision == -1) {
-                if(buffered.readableBytes() < payloadLength + 4) {
+                if (buffered.readableBytes() < 8) {
                     return;
                 }
-                buffered.skipBytes(8);
+                int payloadLength = buffered.getInt(0);
+                int revision = buffered.getInt(4);
 
-                if(revision == 1) {
-                    handleRevision1Response(ctx, payloadLength);
+                boolean handshakeSuccessful = false;
+
+                if (revision == 1 || revision == -1) {
+                    if (buffered.readableBytes() < payloadLength + 4) {
+                        return;
+                    }
+                    buffered.skipBytes(8);
+
+                    if (revision == 1) {
+                        handshakeSuccessful = handleRevision1Response(ctx, payloadLength);
+                    } else {
+                        handshakeSuccessful = handleGenericResponse(ctx, payloadLength);
+                    }
                 } else {
-                    handleGenericResponse(ctx, payloadLength);
-                    return;
+                    handshakeSuccessful = handleUnknownRevisionResponse(ctx);
                 }
-            } else {
-                handleUnknownRevisionResponse(ctx);
-                return;
+
+                if(!handshakeSuccessful) {
+                    ctx.getChannel().close();
+                }
+
+                if(keepAliveInterval.millis() > 0)
+                    ctx.getPipeline().addBefore(ctx.getName(), "connection-keep-alive", new ConnectionKeepAliveHandler(timer, keepAliveInterval));
+
+                handshakeComplete = true;
+
+                ChannelBuffer remaining = buffered.slice();
+                if (remaining.readableBytes() > 0)
+                    ctx.sendUpstream(new UpstreamMessageEvent(ctx.getChannel(), remaining, ctx.getChannel().getRemoteAddress()));
+
+                ctx.getPipeline().remove(this);
             }
-
-            handshakeComplete = true;
-
-            ChannelBuffer remaining = buffered.slice();
-            if(remaining.readableBytes() > 0)
-                ctx.sendUpstream(new UpstreamMessageEvent(ctx.getChannel(), remaining, ctx.getChannel().getRemoteAddress()));
         }
     }
 
-    private void handleUnknownRevisionResponse(ChannelHandlerContext ctx) {
+    private boolean handleUnknownRevisionResponse(ChannelHandlerContext ctx) {
         logger.error("Unknown revision response received.");
-        ctx.getPipeline().remove(this);
-        ctx.getChannel().close();
+        return false;
     }
 
-    private void handleRevision1Response(ChannelHandlerContext ctx, int payloadLength) throws Exception {
+    private boolean handleRevision1Response(ChannelHandlerContext ctx, int payloadLength) throws Exception {
         int code = buffered.readInt();
 
         int descriptionLength = buffered.readInt();
@@ -163,31 +168,14 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
 
         if(200 <= code && code <= 299) {
             logger.info("Connected to Found Elasticsearch: [{}]: [{}]", code, description);
+            return true;
         } else {
             logger.error("Unable to connect to Found Elasticsearch: [{}]: [{}]", code, description);
-            ctx.getChannel().close();
-            return;
-        }
-
-        ctx.getPipeline().remove(this);
-
-        final ChannelPipeline pipeline = originalFactory.getPipeline();
-
-        if(keepAliveInterval.millis() > 0)
-            ctx.getPipeline().addLast("connection-keep-alive", new ConnectionKeepAliveHandler(timer, keepAliveInterval));
-
-        while(true) {
-            ChannelHandler handler = pipeline.getFirst();
-            if(handler == null) break;
-
-            ChannelHandlerContext handlerContext = pipeline.getContext(handler);
-
-            ctx.getPipeline().addLast(handlerContext.getName(), handler);
-            pipeline.remove(handler);
+            return false;
         }
     }
 
-    private void handleGenericResponse(ChannelHandlerContext ctx, int payloadLength) throws Exception {
+    private boolean handleGenericResponse(ChannelHandlerContext ctx, int payloadLength) throws Exception {
         int code = buffered.readInt();
 
         int descriptionLength = buffered.readInt();
@@ -197,6 +185,8 @@ public class FoundSwitchingChannelHandler extends SimpleChannelHandler {
         String description = new String(descBytes, StandardCharsets.UTF_8);
 
         logger.error("Unable to connect to Found Elasticsearch: [{}]: [{}]", code, description);
+
+        return false;
     }
 
     @Override

@@ -18,7 +18,7 @@ import org.junit.Test;
 
 import java.lang.reflect.Field;
 
-public class TestTransportModule {
+public class TestFoundNettyTransportModule {
     @Test
     public void testInjection() throws Exception {
         Settings settings = ImmutableSettings.settingsBuilder()

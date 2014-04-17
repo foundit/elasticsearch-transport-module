@@ -5,7 +5,7 @@
 
 package org.elasticsearch.transport.netty;
 
-import no.found.elasticsearch.transport.netty.FoundSwitchingChannelHandler;
+import no.found.elasticsearch.transport.netty.FoundAuthenticatingChannelHandler;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.Version;
 import org.elasticsearch.cluster.ClusterName;
@@ -89,8 +89,8 @@ public class FoundNettyTransport extends NettyTransport {
             clientBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
                 @Override
                 public ChannelPipeline getPipeline() throws Exception {
-                    ChannelPipeline pipeline =  Channels.pipeline();
-                    pipeline.addFirst("found-switching-channel-handler", new FoundSwitchingChannelHandler(logger, originalFactory, clusterName, timer, keepAliveInterval, unsafeAllowSelfSigned, hostSuffixes, sslPorts, apiKey));
+                    ChannelPipeline pipeline =  originalFactory.getPipeline();
+                    pipeline.addFirst("found-switching-channel-handler", new FoundAuthenticatingChannelHandler(logger, clusterName, timer, keepAliveInterval, unsafeAllowSelfSigned, hostSuffixes, sslPorts, apiKey));
                     return pipeline;
                 }
             });
@@ -103,6 +103,11 @@ public class FoundNettyTransport extends NettyTransport {
 
     @Override
     public void connectToNode(DiscoveryNode node, boolean light) {
+        // we hook into the connection here and use reflection in order to update the
+        // resolved address of the given node by resolving it again. the rationale behind
+        // this is that the ELB addresses may change and that Elasticsearch otherwise doesn't
+        // try to resolve it again.
+
         if(node.address() instanceof InetSocketTransportAddress) {
             InetSocketTransportAddress oldAddress = (InetSocketTransportAddress)node.address();
             InetSocketTransportAddress newAddress = new InetSocketTransportAddress(oldAddress.address().getHostString(), oldAddress.address().getPort());
@@ -112,6 +117,7 @@ public class FoundNettyTransport extends NettyTransport {
 
             boolean resolvedOk = !oldResolved || newResolved;
 
+            // only update it if the old one was not resolved, or the new address is resolved AND the address has changed.
             if(resolvedOk && !Arrays.equals(oldAddress.address().getAddress().getAddress(), newAddress.address().getAddress().getAddress())) {
                 try {
                     Field addressField = node.getClass().getDeclaredField("address");
