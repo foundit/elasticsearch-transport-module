@@ -45,6 +45,8 @@ public class FoundAuthenticatingChannelHandler extends SimpleChannelHandler {
     private final boolean unsafeAllowSelfSigned;
 
     ChannelBuffer buffered = ChannelBuffers.EMPTY_BUFFER;
+    boolean isFoundCluster = false;
+    boolean headerSent = false;
     boolean handshakeComplete = false;
 
     public FoundAuthenticatingChannelHandler(ESLogger logger, ClusterName clusterName, Timer timer, TimeValue keepAliveInterval, boolean unsafeAllowSelfSigned, String[] hostSuffixes, int[] sslPorts, String apiKey) {
@@ -65,12 +67,9 @@ public class FoundAuthenticatingChannelHandler extends SimpleChannelHandler {
      * to a SSL-endpoint (using a list of pre-configured ports).
      */
     @Override
-    public void channelBound(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
-        SocketAddress socketAddress = ctx.getChannel().getRemoteAddress();
-        if(socketAddress instanceof InetSocketAddress) {
-            InetSocketAddress inetSocketAddress = (InetSocketAddress)socketAddress;
-
-            boolean isFoundCluster = false;
+    public void connectRequested(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
+        if(e.getValue() instanceof InetSocketAddress) {
+            InetSocketAddress inetSocketAddress = (InetSocketAddress)e.getValue();
 
             for(String suffix: hostSuffixes) isFoundCluster = isFoundCluster || inetSocketAddress.getHostString().endsWith(suffix);
 
@@ -87,17 +86,24 @@ public class FoundAuthenticatingChannelHandler extends SimpleChannelHandler {
                 ctx.getPipeline().remove(this);
             }
         }
-        super.channelBound(ctx, e);
+        super.connectRequested(ctx, e);
+    }
+
+    @Override
+    public void writeRequested(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
+        if(isFoundCluster && !headerSent) {
+            headerSent = true;
+            logger.info("Authenticating with Found Elasticsearch at [{}]", ctx.getChannel().getRemoteAddress());
+            ChannelBuffer message = new FoundTransportHeader(clusterName.value(), apiKey).getHeaderBuffer();
+
+            ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), Channels.future(ctx.getChannel()), message, ctx.getChannel().getRemoteAddress()));
+        }
+        super.writeRequested(ctx, e);
     }
 
     @Override
     public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
         super.channelConnected(ctx, e);
-
-        logger.info("Authenticating with Found Elasticsearch at [{}]", ctx.getChannel().getRemoteAddress());
-        ChannelBuffer message = new FoundTransportHeader(clusterName.value(), apiKey).getHeaderBuffer();
-
-        ctx.getChannel().write(message);
     }
 
 

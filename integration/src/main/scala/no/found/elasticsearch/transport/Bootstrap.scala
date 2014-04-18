@@ -35,7 +35,7 @@ object Bootstrap extends App {
 
   while(!done) {
     try {
-      val healthRequest = client.admin().cluster().health(Requests.clusterHealthRequest())
+      val healthRequest = client.admin().cluster().health(Requests.clusterHealthRequest().listenerThreaded(false))
       val response = healthRequest.get(100, TimeUnit.SECONDS)
 
       logger.info("Status: [{}]", response.getStatus)
