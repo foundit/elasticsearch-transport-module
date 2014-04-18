@@ -15,10 +15,9 @@ object Build extends Build {
 
   transportDependencies ++= Seq(
     "org.elasticsearch" % "elasticsearch" % elasticsearchVersion % "provided",
-
     "junit" % "junit" % "4.11" % "test",
-
-    "org.mockito" % "mockito-all" % "1.9.5" % "test"
+    "org.mockito" % "mockito-all" % "1.9.5" % "test",
+    "log4j" % "log4j" % "1.2.17" % "test"
   )
 
   lazy val root = Project(id = transportName, base=file("."), settings = Project.defaultSettings).settings(
@@ -69,7 +68,8 @@ object Build extends Build {
       organizationName := foundOrganizationName,
 
       libraryDependencies ++= Seq(
-        "org.elasticsearch" % "elasticsearch" % elasticsearchVersion
+        "org.elasticsearch" % "elasticsearch" % elasticsearchVersion,
+        "log4j" % "log4j" % "1.2.17"
       ),
 
       // Integration tests are not intended to be run in parallel.

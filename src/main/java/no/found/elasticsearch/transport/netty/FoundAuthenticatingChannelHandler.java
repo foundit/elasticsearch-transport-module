@@ -45,7 +45,6 @@ public class FoundAuthenticatingChannelHandler extends SimpleChannelHandler {
     private final boolean unsafeAllowSelfSigned;
 
     ChannelBuffer buffered = ChannelBuffers.EMPTY_BUFFER;
-    boolean isFoundCluster = false;
     boolean handshakeComplete = false;
 
     public FoundAuthenticatingChannelHandler(ESLogger logger, ClusterName clusterName, Timer timer, TimeValue keepAliveInterval, boolean unsafeAllowSelfSigned, String[] hostSuffixes, int[] sslPorts, String apiKey) {
@@ -71,6 +70,8 @@ public class FoundAuthenticatingChannelHandler extends SimpleChannelHandler {
         if(socketAddress instanceof InetSocketAddress) {
             InetSocketAddress inetSocketAddress = (InetSocketAddress)socketAddress;
 
+            boolean isFoundCluster = false;
+
             for(String suffix: hostSuffixes) isFoundCluster = isFoundCluster || inetSocketAddress.getHostString().endsWith(suffix);
 
             if(isFoundCluster) {
@@ -82,6 +83,8 @@ public class FoundAuthenticatingChannelHandler extends SimpleChannelHandler {
                         break;
                     }
                 }
+            } else {
+                ctx.getPipeline().remove(this);
             }
         }
         super.channelBound(ctx, e);
@@ -91,12 +94,10 @@ public class FoundAuthenticatingChannelHandler extends SimpleChannelHandler {
     public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
         super.channelConnected(ctx, e);
 
-        if(isFoundCluster) {
-            logger.info("Authenticating with Found Elasticsearch at [{}]", ctx.getChannel().getRemoteAddress());
-            ChannelBuffer message = new FoundTransportHeader(clusterName.value(), apiKey).getHeaderBuffer();
+        logger.info("Authenticating with Found Elasticsearch at [{}]", ctx.getChannel().getRemoteAddress());
+        ChannelBuffer message = new FoundTransportHeader(clusterName.value(), apiKey).getHeaderBuffer();
 
-            ctx.getChannel().write(message);
-        }
+        ctx.getChannel().write(message);
     }
 
 

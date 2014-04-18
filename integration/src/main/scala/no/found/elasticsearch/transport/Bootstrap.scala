@@ -10,8 +10,11 @@ import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.settings.ImmutableSettings
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.client.Requests
+import org.elasticsearch.common.logging.ESLoggerFactory
 
 object Bootstrap extends App {
+  val logger = ESLoggerFactory.getLogger(getClass.getCanonicalName)
+
   val settings = ImmutableSettings.settingsBuilder()
     .put("cluster.name", System.getProperty("cluster.name", "elasticsearch"))
 
@@ -35,11 +38,11 @@ object Bootstrap extends App {
       val healthRequest = client.admin().cluster().health(Requests.clusterHealthRequest())
       val response = healthRequest.get(100, TimeUnit.SECONDS)
 
-      println("STATUS: " + response.getStatus)
+      logger.info("Status: [{}]", response.getStatus)
     } catch {
       case t: Throwable => {
         errors += 1
-        println(t.getMessage)
+        logger.error("Failed status: [{}]", t.getMessage)
       }
     }
 

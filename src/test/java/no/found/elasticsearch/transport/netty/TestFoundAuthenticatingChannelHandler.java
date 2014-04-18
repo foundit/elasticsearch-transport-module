@@ -23,7 +23,6 @@ import java.net.InetSocketAddress;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -101,6 +100,15 @@ public class TestFoundAuthenticatingChannelHandler {
         handler.channelConnected(context, event);
 
         verify(context, never()).sendDownstream(any(MessageEvent.class));
+    }
+
+    @Test
+    public void testHandlerRemovedForUnknownHost() throws Exception {
+        FoundAuthenticatingChannelHandler handler = getChannelHandler("unknown", socketAddress.getPort());
+
+        handler.channelBound(context, event);
+
+        verify(channelPipeline).remove(handler);
     }
 
     @Test
