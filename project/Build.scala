@@ -3,11 +3,11 @@ import sbt._
 
 object Build extends Build {
   val foundOrganizationName = "Found AS"
-  val foundOrgnizationPrefix = "no.found"
+  val foundOrganizationPrefix = "no.found"
 
   val elasticsearchVersion = "1.1.0"
 
-  val transportOrganization = foundOrgnizationPrefix + ".elasticsearch"
+  val transportOrganization = foundOrganizationPrefix + ".elasticsearch"
   val transportName = "elasticsearch-transport-module"
   val transportVersion = "0.8.7-1000-SNAPSHOT"
 
