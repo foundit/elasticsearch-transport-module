@@ -31,10 +31,10 @@ public class FoundModuleVersion {
     public static final FoundModuleVersion V_0_8_6_0902 = new FoundModuleVersion(V_0_8_6_0902_ID);
 
     public static final int V_0_8_7_1_00_00_ID = /*000*/80710000;
-    public static final FoundModuleVersion V_0_8_7_1000 = new FoundModuleVersion(V_0_8_6_1000_ID);
+    public static final FoundModuleVersion V_0_8_7_1_00_00 = new FoundModuleVersion(V_0_8_7_1_00_00_ID);
 
     public static final int V_0_8_7_0_90_3_ID = /*000*/80709003;
-    public static final FoundModuleVersion V_0_8_7_0907 = new FoundModuleVersion(V_0_8_7_0_90_3_ID);
+    public static final FoundModuleVersion V_0_8_7_0_90_3 = new FoundModuleVersion(V_0_8_7_0_90_3_ID);
 
     public static final int V_0_8_7_0_20_0_ID = /*000*/80702000;
     public static final FoundModuleVersion V_0_8_7_0_20_0 = new FoundModuleVersion(V_0_8_7_0_20_0_ID);
