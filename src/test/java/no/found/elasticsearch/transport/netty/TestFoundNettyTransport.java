@@ -22,7 +22,7 @@ import java.lang.reflect.Field;
 
 import static org.junit.Assert.assertNotNull;
 
-public class TestNettyTransport {
+public class TestFoundNettyTransport {
     @Test
     public void testClientBootstrapUpdated() throws Exception {
         Settings settings = ImmutableSettings.settingsBuilder()
@@ -46,7 +46,7 @@ public class TestNettyTransport {
 
         ChannelPipeline pipeline = clientBootstrap.getPipelineFactory().getPipeline();
 
-        FoundSwitchingChannelHandler channelHandler = pipeline.get(FoundSwitchingChannelHandler.class);
+        FoundAuthenticatingChannelHandler channelHandler = pipeline.get(FoundAuthenticatingChannelHandler.class);
         assertNotNull(channelHandler);
     }
 }
