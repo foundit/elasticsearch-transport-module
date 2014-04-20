@@ -5,22 +5,28 @@
 
 package org.elasticsearch.transport.netty;
 
-import no.found.elasticsearch.transport.netty.FoundSwitchingChannelHandler;
+import no.found.elasticsearch.transport.netty.FoundAuthenticatingChannelHandler;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.Version;
 import org.elasticsearch.cluster.ClusterName;
+import org.elasticsearch.cluster.node.DiscoveryNode;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.netty.bootstrap.ClientBootstrap;
-import org.elasticsearch.common.netty.channel.*;
+import org.elasticsearch.common.netty.channel.ChannelHandlerContext;
+import org.elasticsearch.common.netty.channel.ChannelPipeline;
+import org.elasticsearch.common.netty.channel.ChannelPipelineFactory;
+import org.elasticsearch.common.netty.channel.ExceptionEvent;
 import org.elasticsearch.common.netty.util.HashedWheelTimer;
 import org.elasticsearch.common.netty.util.Timer;
 import org.elasticsearch.common.network.NetworkService;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.threadpool.ThreadPool;
 
 import javax.net.ssl.SSLException;
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -86,7 +92,9 @@ public class FoundNettyTransport extends NettyTransport {
             clientBootstrap.setPipelineFactory(new ChannelPipelineFactory() {
                 @Override
                 public ChannelPipeline getPipeline() throws Exception {
-                    return Channels.pipeline(new FoundSwitchingChannelHandler(logger, originalFactory, clusterName, timer, keepAliveInterval, unsafeAllowSelfSigned, hostSuffixes, sslPorts, apiKey));
+                    ChannelPipeline pipeline =  originalFactory.getPipeline();
+                    pipeline.addFirst("found-authenticating-channel-handler", new FoundAuthenticatingChannelHandler(logger, clusterName, timer, keepAliveInterval, unsafeAllowSelfSigned, hostSuffixes, sslPorts, apiKey));
+                    return pipeline;
                 }
             });
 
@@ -97,7 +105,39 @@ public class FoundNettyTransport extends NettyTransport {
     }
 
     @Override
-    protected void doStop() throws ElasticSearchException {
-        super.doStop();
+    public void connectToNode(DiscoveryNode node, boolean light) {
+        // we hook into the connection here and use reflection in order to update the
+        // resolved address of the given node by resolving it again. the rationale behind
+        // this is that the ELB addresses may change and that Elasticsearch otherwise doesn't
+        // try to resolve it again.
+
+        if(node.address() instanceof InetSocketTransportAddress) {
+            InetSocketTransportAddress oldAddress = (InetSocketTransportAddress)node.address();
+            InetSocketTransportAddress newAddress = new InetSocketTransportAddress(oldAddress.address().getHostString(), oldAddress.address().getPort());
+
+            boolean oldResolved = !oldAddress.address().isUnresolved();
+            boolean newResolved = !newAddress.address().isUnresolved();
+
+            boolean resolvedOk = !oldResolved || newResolved;
+
+            // only update it if the old one was not resolved, or the new address is resolved AND the address has changed.
+            if(resolvedOk && !Arrays.equals(oldAddress.address().getAddress().getAddress(), newAddress.address().getAddress().getAddress())) {
+                try {
+                    Field addressField = node.getClass().getDeclaredField("address");
+
+                    boolean wasAccessible = addressField.isAccessible();
+                    addressField.setAccessible(true);
+
+                    addressField.set(node, newAddress);
+
+                    addressField.setAccessible(wasAccessible);
+
+                    logger.info("Updated the resolved address of [{}] from [{}] to [{}]", node, oldAddress, newAddress);
+                } catch (ReflectiveOperationException roe) {
+                    logger.error("Unable to update the resolved address of [{}]. Plugin upgrade likely required.", roe, node);
+                }
+            }
+        }
+        super.connectToNode(node, light);
     }
 }
