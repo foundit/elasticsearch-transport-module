@@ -1,5 +1,6 @@
 import sbt.Keys._
 import sbt._
+import sbtrelease.ReleasePlugin._
 
 object Build extends Build {
   val foundOrganizationName = "Found AS"
@@ -60,7 +61,9 @@ object Build extends Build {
     scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation", "-feature"),
 
     libraryDependencies := transportDependencies
-  ).settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*)
+  ).settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*).settings(releaseSettings: _*).settings(
+
+    )
 
   lazy val integration = Project("integration", file("./integration"))
     .dependsOn(root, root % "test->test")
