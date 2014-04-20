@@ -93,7 +93,7 @@ public class FoundNettyTransport extends NettyTransport {
                 @Override
                 public ChannelPipeline getPipeline() throws Exception {
                     ChannelPipeline pipeline =  originalFactory.getPipeline();
-                    pipeline.addFirst("found-switching-channel-handler", new FoundAuthenticatingChannelHandler(logger, clusterName, timer, keepAliveInterval, unsafeAllowSelfSigned, hostSuffixes, sslPorts, apiKey));
+                    pipeline.addFirst("found-authenticating-channel-handler", new FoundAuthenticatingChannelHandler(logger, clusterName, timer, keepAliveInterval, unsafeAllowSelfSigned, hostSuffixes, sslPorts, apiKey));
                     return pipeline;
                 }
             });
