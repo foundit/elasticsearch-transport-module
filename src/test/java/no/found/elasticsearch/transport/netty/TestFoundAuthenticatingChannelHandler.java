@@ -22,7 +22,7 @@ import org.mockito.ArgumentCaptor;
 import java.net.InetSocketAddress;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -55,6 +55,7 @@ public class TestFoundAuthenticatingChannelHandler {
         when(context.getChannel()).thenReturn(channel);
         when(context.getPipeline()).thenReturn(channelPipeline);
         when(channel.getRemoteAddress()).thenReturn(socketAddress);
+        when(event.getValue()).thenReturn(socketAddress);
     }
 
     public FoundAuthenticatingChannelHandler getChannelHandler(String knownHost, int sslPort) {
@@ -87,7 +88,7 @@ public class TestFoundAuthenticatingChannelHandler {
     public void testSSLAddedForKnownHostPort() throws Exception {
         FoundAuthenticatingChannelHandler handler = getChannelHandler(socketAddress.getHostString(), socketAddress.getPort());
 
-        handler.channelBound(context, event);
+        handler.connectRequested(context, event);
 
         verify(channelPipeline).addFirst(anyString(), any(FoundSSLHandler.class));
     }
@@ -106,23 +107,33 @@ public class TestFoundAuthenticatingChannelHandler {
     public void testHandlerRemovedForUnknownHost() throws Exception {
         FoundAuthenticatingChannelHandler handler = getChannelHandler("unknown", socketAddress.getPort());
 
-        handler.channelBound(context, event);
+        handler.connectRequested(context, event);
 
         verify(channelPipeline).remove(handler);
+
+        assertFalse(handler.isFoundCluster);
+    }
+
+    @Test
+    public void testKnownHostDetected() throws Exception {
+        FoundAuthenticatingChannelHandler handler = getChannelHandler(socketAddress.getHostString(), socketAddress.getPort());
+
+        handler.connectRequested(context, event);
+
+        assertTrue(handler.isFoundCluster);
     }
 
     @Test
     public void testHeaderSentForKnownHost() throws Exception {
         FoundAuthenticatingChannelHandler handler = getChannelHandler(socketAddress.getHostString(), socketAddress.getPort());
 
-        ArgumentCaptor<ChannelBuffer> argument = ArgumentCaptor.forClass(ChannelBuffer.class);
+        ArgumentCaptor<DownstreamMessageEvent> argument = ArgumentCaptor.forClass(DownstreamMessageEvent.class);
 
-        handler.channelBound(context, event);
+        handler.isFoundCluster = true;
         handler.channelConnected(context, event);
+        verify(context).sendDownstream(argument.capture());
 
-        verify(channel).write(argument.capture());
-
-        ChannelBuffer message = argument.getValue();
+        ChannelBuffer message = (ChannelBuffer)argument.getValue().getMessage();
         assertEquals(new FoundTransportHeader(clusterName.value(), API_KEY).getHeaderBuffer(), message);
     }
 
