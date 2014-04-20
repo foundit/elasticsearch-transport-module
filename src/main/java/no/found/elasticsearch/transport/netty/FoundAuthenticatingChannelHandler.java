@@ -14,6 +14,7 @@ import org.elasticsearch.common.netty.channel.*;
 import org.elasticsearch.common.netty.util.Timer;
 import org.elasticsearch.common.unit.TimeValue;
 
+import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -90,22 +91,28 @@ public class FoundAuthenticatingChannelHandler extends SimpleChannelHandler {
     }
 
     @Override
-    public void writeRequested(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
+    public synchronized void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
         if(isFoundCluster && !headerSent) {
-            headerSent = true;
-            logger.info("Authenticating with Found Elasticsearch at [{}]", ctx.getChannel().getRemoteAddress());
-            ChannelBuffer message = new FoundTransportHeader(clusterName.value(), apiKey).getHeaderBuffer();
+            sendHeader(ctx);
+        }
+        super.channelConnected(ctx, e);
+    }
 
-            ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), Channels.future(ctx.getChannel()), message, ctx.getChannel().getRemoteAddress()));
+    @Override
+    public synchronized void writeRequested(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
+        if(isFoundCluster && !headerSent) {
+            sendHeader(ctx);
         }
         super.writeRequested(ctx, e);
     }
 
-    @Override
-    public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
-        super.channelConnected(ctx, e);
-    }
+    private void sendHeader(ChannelHandlerContext ctx) throws IOException {
+        headerSent = true;
+        logger.info("Authenticating with Found Elasticsearch at [{}]", ctx.getChannel().getRemoteAddress());
+        ChannelBuffer message = new FoundTransportHeader(clusterName.value(), apiKey).getHeaderBuffer();
 
+        ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), Channels.future(ctx.getChannel()), message, ctx.getChannel().getRemoteAddress()));
+    }
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
