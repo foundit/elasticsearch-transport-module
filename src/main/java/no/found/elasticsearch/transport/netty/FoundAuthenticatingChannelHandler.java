@@ -77,7 +77,7 @@ public class FoundAuthenticatingChannelHandler extends SimpleChannelHandler {
             if(isFoundCluster) {
                 for(int sslPort: sslPorts) {
                     if(inetSocketAddress.getPort() == sslPort) {
-                        logger.info("Enabling SSL on transport layer with unsafeAllowSelfSigned=[{}].", unsafeAllowSelfSigned);
+                        logger.debug("Enabling SSL on transport layer with unsafeAllowSelfSigned=[{}].", unsafeAllowSelfSigned);
                         FoundSSLHandler handler = FoundSSLUtils.getSSLHandler(unsafeAllowSelfSigned, inetSocketAddress);
                         ctx.getPipeline().addFirst("ssl", handler);
                         break;
@@ -108,10 +108,10 @@ public class FoundAuthenticatingChannelHandler extends SimpleChannelHandler {
 
     private void sendHeader(ChannelHandlerContext ctx) throws IOException {
         headerSent = true;
-        logger.info("Authenticating with Found Elasticsearch at [{}]", ctx.getChannel().getRemoteAddress());
+        logger.info("Authenticating with Found Elasticsearch at [{}] on connection [{}]", ctx.getChannel().getRemoteAddress(), ctx.getChannel().getLocalAddress());
         ChannelBuffer message = new FoundTransportHeader(clusterName.value(), apiKey).getHeaderBuffer();
 
-        ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), Channels.future(ctx.getChannel()), message, ctx.getChannel().getRemoteAddress()));
+        ctx.sendDownstream(new DownstreamMessageEvent(ctx.getChannel(), Channels.succeededFuture(ctx.getChannel()), message, ctx.getChannel().getRemoteAddress()));
     }
 
     @Override
@@ -151,7 +151,7 @@ public class FoundAuthenticatingChannelHandler extends SimpleChannelHandler {
                 }
 
                 if(keepAliveInterval.millis() > 0)
-                    ctx.getPipeline().addBefore(ctx.getName(), "connection-keep-alive", new ConnectionKeepAliveHandler(timer, keepAliveInterval));
+                    ctx.getPipeline().addBefore(ctx.getName(), "found-connection-keep-alive", new ConnectionKeepAliveHandler(timer, keepAliveInterval));
 
                 handshakeComplete = true;
 
@@ -165,7 +165,7 @@ public class FoundAuthenticatingChannelHandler extends SimpleChannelHandler {
     }
 
     private boolean handleUnknownRevisionResponse(ChannelHandlerContext ctx) {
-        logger.error("Unknown revision response received.");
+        logger.error("Unknown revision response received on connection [{}]", ctx.getChannel().getRemoteAddress(), ctx.getChannel().getLocalAddress());
         return false;
     }
 
@@ -178,13 +178,13 @@ public class FoundAuthenticatingChannelHandler extends SimpleChannelHandler {
 
         String description = new String(descBytes, StandardCharsets.UTF_8);
 
-        logger.debug("Decoded payload with length:[{}], code:[{}], descriptionLength:[{}], description:[{}]", payloadLength, code, descriptionLength, description);
+        logger.debug("Decoded payload with length:[{}], code:[{}], descriptionLength:[{}], description:[{}] on connection [{}]", payloadLength, code, descriptionLength, description, ctx.getChannel().getLocalAddress());
 
         if(200 <= code && code <= 299) {
-            logger.info("Connected to Found Elasticsearch: [{}]: [{}]", code, description);
+            logger.info("Connected to Found Elasticsearch: [{}]: [{}] on connection [{}]", code, description, ctx.getChannel().getLocalAddress());
             return true;
         } else {
-            logger.error("Unable to connect to Found Elasticsearch: [{}]: [{}]", code, description);
+            logger.error("Unable to connect to Found Elasticsearch: [{}]: [{}] on connection [{}]", code, description, ctx.getChannel().getLocalAddress());
             return false;
         }
     }
@@ -198,7 +198,7 @@ public class FoundAuthenticatingChannelHandler extends SimpleChannelHandler {
 
         String description = new String(descBytes, StandardCharsets.UTF_8);
 
-        logger.error("Unable to connect to Found Elasticsearch: [{}]: [{}]", code, description);
+        logger.error("Unable to connect to Found Elasticsearch: [{}]: [{}] on connection [{}]", code, description, ctx.getChannel().getLocalAddress());
 
         return false;
     }
