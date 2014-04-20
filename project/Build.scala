@@ -62,8 +62,14 @@ object Build extends Build {
 
     libraryDependencies := transportDependencies
   ).settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*).settings(releaseSettings: _*).settings(
-
-    )
+      ReleaseKeys.releaseVersion := { ver => ver.replace("-SNAPSHOT", "") },
+      ReleaseKeys.nextVersion := { ver =>
+        val parts = ver.split("-", 2)
+        val part0 = sbtrelease.Version(parts(0)).map(_.bumpBugfix.string).getOrElse(sbtrelease.versionFormatError)
+        val part1 = sbtrelease.Version(parts(1)).map(_.asSnapshot.string).getOrElse(sbtrelease.versionFormatError)
+        s"$part0-$part1"
+      }
+  )
 
   lazy val integration = Project("integration", file("./integration"))
     .dependsOn(root, root % "test->test")
