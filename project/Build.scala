@@ -1,6 +1,10 @@
 import sbt.Keys._
 import sbt._
 import sbtrelease.ReleasePlugin._
+import sbtrelease.ReleaseStep
+import sbtrelease.ReleaseStateTransformations._
+import sbtrelease.Utilities._
+import com.typesafe.sbt.SbtPgp.PgpKeys._
 
 object Build extends Build {
   val foundOrganizationName = "Found AS"
@@ -10,7 +14,6 @@ object Build extends Build {
 
   val transportOrganization = foundOrganizationPrefix + ".elasticsearch"
   val transportName = "elasticsearch-transport-module"
-  val transportVersion = "0.8.7-1.0.0-SNAPSHOT"
 
   var transportDependencies = Seq[ModuleID]()
 
@@ -56,20 +59,45 @@ object Build extends Build {
         </developer>
       </developers>,
 
-    version := transportVersion,
-
     scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation", "-feature"),
 
     libraryDependencies := transportDependencies
   ).settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*).settings(releaseSettings: _*).settings(
       ReleaseKeys.releaseVersion := { ver => ver.replace("-SNAPSHOT", "") },
       ReleaseKeys.nextVersion := { ver =>
-        val parts = ver.split("-", 2)
-        val part0 = sbtrelease.Version(parts(0)).map(_.bumpBugfix.string).getOrElse(sbtrelease.versionFormatError)
-        val part1 = sbtrelease.Version(parts(1)).map(_.asSnapshot.string).getOrElse(sbtrelease.versionFormatError)
-        s"$part0-$part1"
-      }
+        if(ver.contains("-")) {
+          val parts = ver.split("-", 2)
+          val part0 = sbtrelease.Version(parts(0)).map(_.bumpBugfix.string).getOrElse(sbtrelease.versionFormatError)
+          val part1 = sbtrelease.Version(parts(1)).map(_.asSnapshot.string).getOrElse(sbtrelease.versionFormatError)
+          s"$part0-$part1"
+        } else ver
+      },
+      ReleaseKeys.releaseProcess := Seq[ReleaseStep](
+        checkSnapshotDependencies,
+        inquireVersions,
+        runClean,
+        runTest,
+        setReleaseVersion,
+        commitReleaseVersion,
+        tagRelease,
+        publishArtifacts.copy(action = publishSignedAction),
+        setNextVersion,
+        commitNextVersion,
+        pushChanges
+      )
   )
+
+  lazy val publishSignedAction = { st: State =>
+    val extracted = st.extract
+    val thisBuildVersion = extracted.get(version in ThisBuild)
+
+    val nst = extracted.append(Seq(version := thisBuildVersion), st)
+
+    val nextracted = nst.extract
+    val ref = nextracted.get(thisProjectRef)
+
+    nextracted.runAggregated(publishSigned in ThisBuild in ref, nst)
+  }
 
   lazy val integration = Project("integration", file("./integration"))
     .dependsOn(root, root % "test->test")
@@ -84,7 +112,13 @@ object Build extends Build {
 
       // Integration tests are not intended to be run in parallel.
       parallelExecution in Test := false,
-      logBuffered in Test := false
+      logBuffered in Test := false,
+
+      publish := (),
+      publishLocal := (),
+      // required until these tickets are closed https://github.com/sbt/sbt-pgp/issues/42,
+      // https://github.com/sbt/sbt-pgp/issues/36
+      publishTo := None
     )
 
   // configure prompt to show current project
