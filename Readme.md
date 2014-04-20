@@ -13,11 +13,18 @@ between local development, staging and production.
 
 Elasticsearch | This Module
 --- | ---
-1.0.0 -> 1.0.x | 0.8.5-1000
-0.90.3 -> 0.90.x | 0.8.5-0907
-0.20.x -> 0.90.2 | 0.8.5-0902
+1.0.0 -> 1.1.x | 0.8.7-1.0.0
+0.90.3 -> 0.90.x | 0.8.7-0.90.3
+0.20.x -> 0.90.2 | 0.8.7-0.20.0
 
 ### Changes
+
+0.8.7 -> Extends the default netty ChannelPipeline instead of replacing it and
+    avoids delaying initial messages in order to fix some race conditions
+    experienced during (re-)connection.
+
+0.8.6 -> Resolves addresses of nodes when connecting periodically in case of DNS
+    changes. This release was not published to Maven Central.
 
 0.8.5 -> Sends the current transport module version to the server along with the
     current Elasticsearch version.
