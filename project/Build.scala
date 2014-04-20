@@ -3,22 +3,21 @@ import sbt._
 
 object Build extends Build {
   val foundOrganizationName = "Found AS"
-  val foundOrgnizationPrefix = "no.found"
+  val foundOrganizationPrefix = "no.found"
 
-  val elasticsearchVersion = "1.0.0"
+  val elasticsearchVersion = "1.1.0"
 
-  val transportOrganization = foundOrgnizationPrefix + ".elasticsearch"
+  val transportOrganization = foundOrganizationPrefix + ".elasticsearch"
   val transportName = "elasticsearch-transport-module"
-  val transportVersion = "0.8.6-1000-SNAPSHOT"
+  val transportVersion = "0.8.7-1000-SNAPSHOT"
 
   var transportDependencies = Seq[ModuleID]()
 
   transportDependencies ++= Seq(
     "org.elasticsearch" % "elasticsearch" % elasticsearchVersion % "provided",
-
     "junit" % "junit" % "4.11" % "test",
-
-    "org.mockito" % "mockito-all" % "1.9.5" % "test"
+    "org.mockito" % "mockito-all" % "1.9.5" % "test",
+    "log4j" % "log4j" % "1.2.17" % "test"
   )
 
   lazy val root = Project(id = transportName, base=file("."), settings = Project.defaultSettings).settings(
@@ -69,7 +68,8 @@ object Build extends Build {
       organizationName := foundOrganizationName,
 
       libraryDependencies ++= Seq(
-        "org.elasticsearch" % "elasticsearch" % elasticsearchVersion
+        "org.elasticsearch" % "elasticsearch" % elasticsearchVersion,
+        "log4j" % "log4j" % "1.2.17"
       ),
 
       // Integration tests are not intended to be run in parallel.
