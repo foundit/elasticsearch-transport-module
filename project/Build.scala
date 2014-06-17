@@ -10,7 +10,7 @@ object Build extends Build {
   val foundOrganizationName = "Found AS"
   val foundOrganizationPrefix = "no.found"
 
-  val elasticsearchVersion = "1.1.1"
+  val elasticsearchVersion = "1.2.0"
 
   val transportOrganization = foundOrganizationPrefix + ".elasticsearch"
   val transportName = "elasticsearch-transport-module"

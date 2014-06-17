@@ -13,6 +13,7 @@ between local development, staging and production.
 
 Elasticsearch | This Module
 --- | ---
+1.2.0 -> 1.2.x | 0.8.7-1.2.0
 1.0.0 -> 1.1.x | 0.8.7-1.0.0
 0.90.3 -> 0.90.x | 0.8.7-0.90.3
 0.20.x -> 0.90.2 | 0.8.7-0.20.0

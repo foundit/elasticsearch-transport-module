@@ -22,6 +22,7 @@ import org.elasticsearch.common.network.NetworkService;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.common.util.BigArrays;
 import org.elasticsearch.threadpool.ThreadPool;
 
 import javax.net.ssl.SSLException;
@@ -45,8 +46,8 @@ public class FoundNettyTransport extends NettyTransport {
     private final ClusterName clusterName;
 
     @Inject
-    public FoundNettyTransport(Settings settings, ThreadPool threadPool, NetworkService networkService, ClusterName clusterName, Version version) {
-        super(settings, threadPool, networkService, version);
+    public FoundNettyTransport(Settings settings, ThreadPool threadPool, NetworkService networkService, ClusterName clusterName, BigArrays bigArrays, Version version) {
+        super(settings, threadPool, networkService, bigArrays, version);
 
         this.clusterName = clusterName;
 
