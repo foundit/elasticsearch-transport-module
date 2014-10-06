@@ -13,7 +13,7 @@ between local development, staging and production.
 
 Elasticsearch | This Module
 --- | ---
-1.2.0 -> 1.2.x | 0.8.7-1.2.0
+1.2.0 -> 1.3.x | 0.8.7-1.2.0
 1.0.0 -> 1.1.x | 0.8.7-1.0.0
 0.90.3 -> 0.90.x | 0.8.7-0.90.3
 0.20.x -> 0.90.2 | 0.8.7-0.20.0
@@ -111,7 +111,7 @@ New settings introduced by this module:
 
 ## Recommended tweaks to existing settings:
 
-We recommend setting ``client.transport.nodes_sampler_interval`` to ``30s`` and setting 
+We recommend setting ``client.transport.nodes_sampler_interval`` to ``30s`` and setting
 ``client.transport.ping_timeout`` to ``30s`` when using Elasticsearch over non-local networks (this also goes for deployments in the same Amazon EC2 region, as the connections may be routed across a regions availability zones).
 
 Not doing so may greatly increase the number of disconnects and reconnects due to intermittent slow routers / congested networks / garbage collection and a host of other transient problems.
