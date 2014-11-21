@@ -11,14 +11,16 @@ between local development, staging and production.
 
 ## Versions
 
-Elasticsearch | This Module
---- | ---
-1.2.0 -> 1.3.x | 0.8.7-1.2.0
+Elasticsearch | This Module | Notes
+--- | --- | ---
+1.2.0 -> 1.4.x | 0.8.7-1.2.0 | For 1.4.0+, ``transport.type`` [has changed](#changes).
 1.0.0 -> 1.1.x | 0.8.7-1.0.0
 0.90.3 -> 0.90.x | 0.8.7-0.90.3
 0.20.x -> 0.90.2 | 0.8.7-0.20.0
 
 ### Changes
+
+0.8.7 -> (for 1.4.0+): The Transport startup in Elasticsearch has been [refactored](https://github.com/elasticsearch/elasticsearch/commit/247ff7d80117ee841b3e8296d125df5aad6f0d30), so the ``transport.type`` should now point directly to our ``Transport`` instead of the ``TransportModule``. The new transport type value shuold be: ``org.elasticsearch.transport.netty.FoundNettyTransport``.
 
 0.8.7 -> Extends the default netty ChannelPipeline instead of replacing it and
     avoids delaying initial messages in order to fix some race conditions
@@ -121,8 +123,13 @@ Not doing so may greatly increase the number of disconnects and reconnects due t
 ```java
 // Build the settings for our transport client.
 Settings settings = ImmutableSettings.settingsBuilder()
-    // Setting "transport.type" enables this module:
+    // Setting "transport.type" enables this module, depending on the Elasticsearch version
+    // - for versions 1.4.0 and later:
     .put("transport.type", "no.found.elasticsearch.transport.netty.FoundNettyTransportModule")
+    // - for earlier versions (1.2.0 -> 1.3.x):
+    .put("transport.type", "org.elasticsearch.transport.netty.FoundNettyTransport")
+    
+    
     // Create an api key via the console and add it here:
     .put("transport.found.api-key", "YOUR_API_KEY")
 
