@@ -125,10 +125,9 @@ Not doing so may greatly increase the number of disconnects and reconnects due t
 Settings settings = ImmutableSettings.settingsBuilder()
     // Setting "transport.type" enables this module, depending on the Elasticsearch version
     // - for versions 1.4.0 and later:
-    .put("transport.type", "no.found.elasticsearch.transport.netty.FoundNettyTransportModule")
-    // - for earlier versions (1.2.0 -> 1.3.x):
     .put("transport.type", "org.elasticsearch.transport.netty.FoundNettyTransport")
-    
+    // - for earlier versions (1.2.0 -> 1.3.x):
+    //.put("transport.type", "no.found.elasticsearch.transport.netty.FoundNettyTransportModule")
     
     // Create an api key via the console and add it here:
     .put("transport.found.api-key", "YOUR_API_KEY")
