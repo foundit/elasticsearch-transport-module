@@ -164,6 +164,14 @@ while(true) {
 }
 ```
 
+### DNS-caching
+
+Note that the JVM will cache DNS lookups infinitely, by default. Since this client is connecting to a load balancer which can change IPs, it’s important to disable this functionality.
+
+This can be done by setting the security property ``networkaddress.cache.ttl`` in ``$JAVA_HOME/lib/security/java.security``. You can also do it programmatically, e.g. ``java.security.Security.setProperty("networkaddress.cache.ttl" , "60")``.
+
+Note that you can not configure it as a JVM-property with e.g. ~~-Dnetworkaddress.cache.ttl=60.~~
+
 ## Complete example
 
 A complete, runnable example can be found at
