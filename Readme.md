@@ -13,7 +13,8 @@ between local development, staging and production.
 
 Elasticsearch | This Module | Notes
 --- | --- | ---
-1.2.0 -> 1.4.x | 0.8.7-1.2.0 | For 1.4.0+, ``transport.type`` [has changed](#changes).
+1.4.0 -> 1.4.x | 0.8.8-1.4.0 | ``transport.type`` [has changed](#changes).
+1.2.0 -> 1.3.x | 0.8.7-1.2.0 | For 1.4.0+, ``transport.type`` [has changed](#changes).
 1.0.0 -> 1.1.x | 0.8.7-1.0.0
 0.90.3 -> 0.90.x | 0.8.7-0.90.3
 0.20.x -> 0.90.2 | 0.8.7-0.20.0
