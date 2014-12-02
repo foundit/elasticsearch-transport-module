@@ -27,7 +27,7 @@ public class TestFoundNettyTransportModule {
     @Test
     public void testInjection() throws Exception {
         Settings settings = ImmutableSettings.settingsBuilder()
-            .put("transport.type", "no.found.elasticsearch.transport.netty.FoundNettyTransportModule")
+            .put("transport.type", "org.elasticsearch.transport.netty.FoundNettyTransport")
             .build();
 
         TransportClient client = new TransportClient(settings);
@@ -56,7 +56,7 @@ public class TestFoundNettyTransportModule {
     @Test
     public void testBackwardsCompatibilityWithOnlyClientUsingModule() throws Exception {
         Settings settings = ImmutableSettings.settingsBuilder()
-                .put("transport.type", "no.found.elasticsearch.transport.netty.FoundNettyTransportModule")
+                .put("transport.type", "org.elasticsearch.transport.netty.FoundNettyTransport")
                 .build();
 
         Settings nodeSettings = ImmutableSettings.settingsBuilder().put("gateway.type", "none").build();
@@ -89,7 +89,7 @@ public class TestFoundNettyTransportModule {
     @Test
     public void testBackwardsCompatibilityWithClientAndServerUsingModule() throws Exception {
         Settings settings = ImmutableSettings.settingsBuilder()
-                .put("transport.type", "no.found.elasticsearch.transport.netty.FoundNettyTransportModule")
+                .put("transport.type", "org.elasticsearch.transport.netty.FoundNettyTransport")
                 .put("gateway.type", "none")
                 .build();
 

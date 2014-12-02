@@ -32,8 +32,66 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A Transport that replaces the default Netty pipeline with one
- * that supports authentication and SSL.
+ * A transport that works with Found Elasticsearch.
+ *
+ * <p>New settings introduced by this transport:</p>
+ *
+ * <ul>
+ *  <li>{@code transport.found.host-suffixes}: A comma-separated list of host suffixes that
+ *  trigger our attempt to authenticate with Found Elasticsearch. Defaults to
+ *  {@code foundcluster.com,found.no}".</li>
+ *
+ *  <li>{@code transport.found.ssl-ports}: A comma-separated list of ports that trigger our
+ *  SSL support. Defaults to {@code 9343}".</li>
+ *
+ *  <li>{@code transport.found.api-key}: An API-key which is used to authorize this client
+ *  when connecting to Found Elasticsearch. API-keys are managed via the console as
+ *  a list of Strings under the root level key "api_keys". Defaults to
+ *  {@code missing-api-key}</li>
+ *
+ *  <li>{@code transport.found.connection-keep-alive-interval}: The interval in which to send
+ *  keep-alive messages. Defaults to {@code 20s}. Set to 0 to disable.</li>
+ *
+ *  <li>{@code transport.found.ssl.unsafe_allow_self_signed}: Whether to accept self-signed
+ *  certificates when using SSL. This is unsafe and allows for MITM-attacks, but
+ *  may be useful for testing. Defaults to {@code false}.</li>
+ * </ul>
+ *
+ * <p><b>The transport is backwards-compatible with the default transport.</b></p>
+ *
+ * <p>Example configuration:</p>
+ *
+ * <pre>
+ * {@code // Build the settings for our client.
+ *   Settings settings = ImmutableSettings.settingsBuilder()
+ *       // Setting "transport.type" enables this transport (1.4+):
+ *       .put("transport.type", "org.elasticsearch.transport.netty.FoundNettyTransport")
+ *       // Create an api key via the console and add it here:
+ *       .put("transport.found.api-key", "YOUR_API_KEY")
+ *
+ *       .put("cluster.name", "YOUR_CLUSTER_ID")
+ *
+ *       .put("client.transport.ignore_cluster_name", false)
+ *
+ *       .build();
+ *
+ *   // Instantiate a TransportClient and add Found Elasticsearch to the list of addresses to connect to.
+ *   // Only port 9343 (SSL-encrypted) is currently supported.
+ *   Client client = new TransportClient(settings)
+ *       .addTransportAddress(new InetSocketTransportAddress("YOUR_CLUSTER_ID-REGION.foundcluster.com", 9343));
+ * }
+ * </pre>
+ *
+ * <p>Example usage:</p>
+ *
+ * <pre>
+ * {@code
+ *  System.out.print("Getting cluster health... "); System.out.flush();
+ *  ActionFuture<ClusterHealthResponse> healthFuture = client.admin().cluster().health(Requests.clusterHealthRequest());
+ *  ClusterHealthResponse healthResponse = healthFuture.get(5, TimeUnit.SECONDS);
+ *  System.out.println("Got response: " + healthResponse.getStatus());
+ * }
+ * </pre>
  */
 public class FoundNettyTransport extends NettyTransport {
     private final String[] hostSuffixes;
@@ -47,6 +105,15 @@ public class FoundNettyTransport extends NettyTransport {
     @Inject
     public FoundNettyTransport(Settings settings, ThreadPool threadPool, NetworkService networkService, ClusterName clusterName, BigArrays bigArrays, Version version) {
         super(settings, threadPool, networkService, bigArrays, version);
+
+        if (settings.getAsBoolean("client.transport.ignore_cluster_name", false)) {
+            logger.warn("client.transport.ignore_cluster_name has been set to true! " +
+                "This is not recommended in combination with Found Elasticsearch Transport module.");
+        }
+
+        if (settings.getAsBoolean("client.transport.sniff", false)) {
+            throw new ElasticsearchException("The transport client setting \"client.transport.sniff\" is [true], which is not supported by this transport.");
+        }
 
         this.scheduler = threadPool.scheduler();
         this.clusterName = clusterName;
