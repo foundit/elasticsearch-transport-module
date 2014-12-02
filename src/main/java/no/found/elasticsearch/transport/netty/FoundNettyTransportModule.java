@@ -87,15 +87,16 @@ import org.elasticsearch.transport.netty.FoundNettyTransport;
  * </pre>
  */
 public class FoundNettyTransportModule extends AbstractModule {
-
     public FoundNettyTransportModule(Settings settings) {
-        if (settings.getAsBoolean("client.transport.ignore_cluster_name", false)) {
-            Loggers.getLogger(getClass(), settings).warn("client.transport.ignore_cluster_name has been set to true! " +
-                        "This is not recommended in combination with found elasticsearch transport module.");
-		}
+        if(settings.get("transport.type").equals(this.getClass().getCanonicalName())) {
+            if (settings.getAsBoolean("client.transport.ignore_cluster_name", false)) {
+                Loggers.getLogger(getClass(), settings).warn("client.transport.ignore_cluster_name has been set to true! " +
+                    "This is not recommended in combination with found elasticsearch transport module.");
+            }
 
-        if(settings.getAsBoolean("client.transport.sniff", false)) {
-            throw new ElasticsearchException("The transport client setting \"client.transport.sniff\" is [true], which is not supported by this transport.");
+            if (settings.getAsBoolean("client.transport.sniff", false)) {
+                throw new ElasticsearchException("The transport client setting \"client.transport.sniff\" is [true], which is not supported by this transport.");
+            }
         }
     }
 

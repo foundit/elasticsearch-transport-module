@@ -11,16 +11,15 @@ import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.netty.buffer.ChannelBuffer;
 import org.elasticsearch.common.netty.buffer.ChannelBuffers;
 import org.elasticsearch.common.netty.channel.*;
-import org.elasticsearch.common.netty.util.Timer;
 import org.elasticsearch.common.unit.TimeValue;
 
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.UnresolvedAddressException;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * A {@link ChannelHandler} that can work with both Found Elasticsearch and the
@@ -41,20 +40,20 @@ public class FoundAuthenticatingChannelHandler extends SimpleChannelHandler {
     private final String[] hostSuffixes;
     private final int[] sslPorts;
     private final String apiKey;
-    private final Timer timer;
     private final TimeValue keepAliveInterval;
     private final boolean unsafeAllowSelfSigned;
+    private final ScheduledExecutorService scheduler;
 
     ChannelBuffer buffered = ChannelBuffers.EMPTY_BUFFER;
     boolean isFoundCluster = false;
     boolean headerSent = false;
     boolean handshakeComplete = false;
 
-    public FoundAuthenticatingChannelHandler(ESLogger logger, ClusterName clusterName, Timer timer, TimeValue keepAliveInterval, boolean unsafeAllowSelfSigned, String[] hostSuffixes, int[] sslPorts, String apiKey) {
+    public FoundAuthenticatingChannelHandler(ESLogger logger, ScheduledExecutorService scheduler, ClusterName clusterName, TimeValue keepAliveInterval, boolean unsafeAllowSelfSigned, String[] hostSuffixes, int[] sslPorts, String apiKey) {
         this.logger = logger;
 
+        this.scheduler = scheduler;
         this.clusterName = clusterName;
-        this.timer = timer;
         this.keepAliveInterval = keepAliveInterval;
         this.unsafeAllowSelfSigned = unsafeAllowSelfSigned;
         this.hostSuffixes = hostSuffixes;
@@ -151,7 +150,7 @@ public class FoundAuthenticatingChannelHandler extends SimpleChannelHandler {
                 }
 
                 if(keepAliveInterval.millis() > 0)
-                    ctx.getPipeline().addBefore(ctx.getName(), "found-connection-keep-alive", new ConnectionKeepAliveHandler(timer, keepAliveInterval));
+                    ctx.getPipeline().addBefore(ctx.getName(), "found-connection-keep-alive", new ConnectionKeepAliveHandler(scheduler, keepAliveInterval));
 
                 handshakeComplete = true;
 

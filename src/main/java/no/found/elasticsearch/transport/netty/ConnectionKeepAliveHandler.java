@@ -3,30 +3,33 @@ package no.found.elasticsearch.transport.netty;
 import org.elasticsearch.common.netty.buffer.ChannelBuffer;
 import org.elasticsearch.common.netty.buffer.ChannelBuffers;
 import org.elasticsearch.common.netty.channel.*;
-import org.elasticsearch.common.netty.util.Timeout;
-import org.elasticsearch.common.netty.util.Timer;
-import org.elasticsearch.common.netty.util.TimerTask;
 import org.elasticsearch.common.unit.TimeValue;
 
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class ConnectionKeepAliveHandler extends SimpleChannelHandler implements LifeCycleAwareChannelHandler {
-    private final Timer timer;
+    private final ScheduledExecutorService scheduler;
     private final TimeValue keepAliveInterval;
-    private Timeout currentTimeout;
     ChannelBuffer keepAliveBuffer = ChannelBuffers.copiedBuffer(new byte[]{'F', 'K', 0, 0, 0, 0});
+    private ScheduledFuture<?> currentScheduled;
 
-    public ConnectionKeepAliveHandler(Timer timer, TimeValue keepAliveInterval) {
-        this.timer = timer;
+    public ConnectionKeepAliveHandler(ScheduledExecutorService scheduler, TimeValue keepAliveInterval) {
+        this.scheduler = scheduler;
         this.keepAliveInterval = keepAliveInterval;
     }
 
 
     private void addTimeoutTask(ChannelHandlerContext ctx) {
-        if(currentTimeout != null && !currentTimeout.isCancelled() && !currentTimeout.isExpired()) {
-            currentTimeout.cancel();
+        cancelCurrentScheduled();
+        currentScheduled = scheduler.schedule(new KeepAliveRunnable(ctx), 2, TimeUnit.SECONDS);
+    }
+
+    private void cancelCurrentScheduled() {
+        if(currentScheduled != null && !currentScheduled.isCancelled() && !currentScheduled.isDone()) {
+            currentScheduled.cancel(true);
         }
-        currentTimeout = timer.newTimeout(new KeepAliveTimerTask(ctx), 2, TimeUnit.SECONDS);
     }
 
     private long lastWrite;
@@ -53,21 +56,19 @@ public class ConnectionKeepAliveHandler extends SimpleChannelHandler implements 
 
     @Override
     public void afterRemove(ChannelHandlerContext channelHandlerContext) throws Exception {
-        if(currentTimeout != null && !currentTimeout.isCancelled() && !currentTimeout.isExpired()) {
-            currentTimeout.cancel();
-        }
+        cancelCurrentScheduled();
     }
 
-    class KeepAliveTimerTask implements TimerTask {
+    class KeepAliveRunnable implements Runnable {
         private final ChannelHandlerContext ctx;
 
-        public KeepAliveTimerTask(ChannelHandlerContext ctx) {
+        public KeepAliveRunnable(ChannelHandlerContext ctx) {
             this.ctx = ctx;
         }
 
         @Override
-        public void run(Timeout timeout) throws Exception {
-            if (timeout.isCancelled() || !ctx.getChannel().isConnected()) return;
+        public void run() {
+            if (!ctx.getChannel().isConnected()) return;
 
             ctx.getPipeline().execute(new Runnable() {
                 @Override

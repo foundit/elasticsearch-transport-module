@@ -15,11 +15,14 @@ import org.elasticsearch.common.netty.channel.*;
 import org.elasticsearch.common.netty.util.HashedWheelTimer;
 import org.elasticsearch.common.netty.util.Timer;
 import org.elasticsearch.common.unit.TimeValue;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.*;
@@ -40,11 +43,12 @@ public class TestFoundAuthenticatingChannelHandler {
     private static final String FOUND_HOST = "test-host";
     private static final int SSL_PORT = 9343;
     private ClusterName clusterName = new ClusterName("test-cluster-name");
-    private Timer timer = new HashedWheelTimer();
+    private ScheduledExecutorService scheduler;
     private TimeValue keepAliveInterval = new TimeValue(0);
 
     @Before
     public void setUp() throws Exception {
+        scheduler = Executors.newScheduledThreadPool(1);
         socketAddress = new InetSocketAddress(FOUND_HOST, SSL_PORT);
 
         channel = mock(Channel.class);
@@ -58,12 +62,17 @@ public class TestFoundAuthenticatingChannelHandler {
         when(event.getValue()).thenReturn(socketAddress);
     }
 
+    @After
+    public void cleanUp() {
+        scheduler.shutdownNow();
+    }
+
     public FoundAuthenticatingChannelHandler getChannelHandler(String knownHost, int sslPort) {
         return getChannelHandler(false, knownHost, sslPort, API_KEY);
     }
 
     public FoundAuthenticatingChannelHandler getChannelHandler(boolean unsafeAllowSelfSigned, String knownHost, int sslPort, String apiKey) {
-        return new FoundAuthenticatingChannelHandler(logger, clusterName, timer, keepAliveInterval, unsafeAllowSelfSigned, new String[] {knownHost}, new int[] {sslPort}, apiKey);
+        return new FoundAuthenticatingChannelHandler(logger, scheduler, clusterName, keepAliveInterval, unsafeAllowSelfSigned, new String[] {knownHost}, new int[] {sslPort}, apiKey);
     }
 
     @Test

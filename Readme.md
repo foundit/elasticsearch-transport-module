@@ -20,7 +20,13 @@ Elasticsearch | This Module | Notes
 
 ### Changes
 
-0.8.7 -> (for 1.4.0+): The Transport startup in Elasticsearch has been [refactored](https://github.com/elasticsearch/elasticsearch/commit/247ff7d80117ee841b3e8296d125df5aad6f0d30), so the ``transport.type`` should now point directly to our ``Transport`` instead of the ``TransportModule``. The new transport type value shuold be: ``org.elasticsearch.transport.netty.FoundNettyTransport``.
+0.8.8 -> Replace the HashedWheelTimer used for the connection-level Keep-Alive
+    messages with a ScheduledExecutorService provided by Elasticsearch.
+
+0.8.7 -> (for 1.4.0+): The Transport startup in Elasticsearch has been
+    [refactored](https://github.com/elasticsearch/elasticsearch/commit/247ff7d80117ee841b3e8296d125df5aad6f0d30),
+    so the ``transport.type`` should now point directly to our ``Transport`` instead of the ``TransportModule``.
+    The new transport type value shuold be: ``org.elasticsearch.transport.netty.FoundNettyTransport``.
 
 0.8.7 -> Extends the default netty ChannelPipeline instead of replacing it and
     avoids delaying initial messages in order to fix some race conditions

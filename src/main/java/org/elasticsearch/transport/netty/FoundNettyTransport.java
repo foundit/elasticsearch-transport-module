@@ -16,8 +16,6 @@ import org.elasticsearch.common.netty.channel.ChannelHandlerContext;
 import org.elasticsearch.common.netty.channel.ChannelPipeline;
 import org.elasticsearch.common.netty.channel.ChannelPipelineFactory;
 import org.elasticsearch.common.netty.channel.ExceptionEvent;
-import org.elasticsearch.common.netty.util.HashedWheelTimer;
-import org.elasticsearch.common.netty.util.Timer;
 import org.elasticsearch.common.network.NetworkService;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
@@ -30,6 +28,7 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -41,14 +40,15 @@ public class FoundNettyTransport extends NettyTransport {
     private final int[] sslPorts;
     private final String apiKey;
     private final boolean unsafeAllowSelfSigned;
-    private static final Timer timer = new HashedWheelTimer();
     private final TimeValue keepAliveInterval;
     private final ClusterName clusterName;
+    private final ScheduledExecutorService scheduler;
 
     @Inject
     public FoundNettyTransport(Settings settings, ThreadPool threadPool, NetworkService networkService, ClusterName clusterName, BigArrays bigArrays, Version version) {
         super(settings, threadPool, networkService, bigArrays, version);
 
+        this.scheduler = threadPool.scheduler();
         this.clusterName = clusterName;
 
         keepAliveInterval = settings.getAsTime("transport.found.connection-keep-alive-interval", new TimeValue(20000, TimeUnit.MILLISECONDS));
@@ -94,7 +94,7 @@ public class FoundNettyTransport extends NettyTransport {
                 @Override
                 public ChannelPipeline getPipeline() throws Exception {
                     ChannelPipeline pipeline =  originalFactory.getPipeline();
-                    pipeline.addFirst("found-authenticating-channel-handler", new FoundAuthenticatingChannelHandler(logger, clusterName, timer, keepAliveInterval, unsafeAllowSelfSigned, hostSuffixes, sslPorts, apiKey));
+                    pipeline.addFirst("found-authenticating-channel-handler", new FoundAuthenticatingChannelHandler(logger, scheduler, clusterName, keepAliveInterval, unsafeAllowSelfSigned, hostSuffixes, sslPorts, apiKey));
                     return pipeline;
                 }
             });

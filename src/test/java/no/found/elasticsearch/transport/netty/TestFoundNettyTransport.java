@@ -14,6 +14,7 @@ import org.elasticsearch.common.netty.channel.ChannelPipeline;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.SettingsModule;
+import org.elasticsearch.threadpool.ThreadPoolModule;
 import org.elasticsearch.transport.TransportModule;
 import org.elasticsearch.transport.netty.FoundNettyTransport;
 import org.junit.Test;
@@ -26,6 +27,7 @@ public class TestFoundNettyTransport {
     @Test
     public void testClientBootstrapUpdated() throws Exception {
         Settings settings = ImmutableSettings.settingsBuilder()
+                .put("name", "found-client-test")
                 .put("transport.type", "no.found.elasticsearch.transport.netty.FoundNettyTransportModule")
                 .build();
 
@@ -35,6 +37,7 @@ public class TestFoundNettyTransport {
         modules.add(new SettingsModule(settings));
         modules.add(new ClusterNameModule(settings));
         modules.add(new TransportModule(settings));
+        modules.add(new ThreadPoolModule(settings));
 
         Injector injector = modules.createInjector();
 
