@@ -57,9 +57,12 @@ public class TestFoundNettyTransportModule {
     public void testBackwardsCompatibilityWithOnlyClientUsingModule() throws Exception {
         Settings settings = ImmutableSettings.settingsBuilder()
                 .put("transport.type", "org.elasticsearch.transport.netty.FoundNettyTransport")
+                .put("discovery.zen.ping.multicast.enabled", false)
                 .build();
 
-        Settings nodeSettings = ImmutableSettings.settingsBuilder().put("gateway.type", "none").build();
+        Settings nodeSettings = ImmutableSettings.settingsBuilder()
+                .put("discovery.zen.ping.multicast.enabled", false)
+                .put("gateway.type", "none").build();
 
         Node node1 = null;
         TransportClient transportClient = null;
