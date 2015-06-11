@@ -19,7 +19,7 @@ object Bootstrap extends App {
     .put("cluster.name", System.getProperty("cluster.name", "elasticsearch"))
 
     .put("transport.type", "no.found.elasticsearch.transport.netty.FoundNettyTransportModule")
-    .put("transport.found.host-suffixes", ".localhacks.com,.foundcluster.com")
+    .put("transport.found.host-suffixes", ".found.io,.localhacks.com,.foundcluster.com")
 
     .put("transport.found.api-key", System.getProperty("api-key", "my-api-key"))
     .build()

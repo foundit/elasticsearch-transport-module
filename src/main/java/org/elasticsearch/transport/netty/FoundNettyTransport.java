@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * <ul>
  *  <li>{@code transport.found.host-suffixes}: A comma-separated list of host suffixes that
  *  trigger our attempt to authenticate with Found Elasticsearch. Defaults to
- *  {@code foundcluster.com,found.no}".</li>
+ *  {@code found.io,foundcluster.com,found.no}".</li>
  *
  *  <li>{@code transport.found.ssl-ports}: A comma-separated list of ports that trigger our
  *  SSL support. Defaults to {@code 9343}".</li>
@@ -78,7 +78,7 @@ import java.util.concurrent.TimeUnit;
  *   // Instantiate a TransportClient and add Found Elasticsearch to the list of addresses to connect to.
  *   // Only port 9343 (SSL-encrypted) is currently supported.
  *   Client client = new TransportClient(settings)
- *       .addTransportAddress(new InetSocketTransportAddress("YOUR_CLUSTER_ID-REGION.foundcluster.com", 9343));
+ *       .addTransportAddress(new InetSocketTransportAddress("YOUR_CLUSTER_ID.REGION.PROVIDER.found.io", 9343));
  * }
  * </pre>
  *
@@ -120,7 +120,7 @@ public class FoundNettyTransport extends NettyTransport {
 
         keepAliveInterval = settings.getAsTime("transport.found.connection-keep-alive-interval", new TimeValue(20000, TimeUnit.MILLISECONDS));
         unsafeAllowSelfSigned = settings.getAsBoolean("transport.found.ssl.unsafe_allow_self_signed", false);
-        hostSuffixes = settings.getAsArray("transport.found.host-suffixes", new String[]{".foundcluster.com", ".found.no"});
+        hostSuffixes = settings.getAsArray("transport.found.host-suffixes", new String[]{".found.io",".foundcluster.com", ".found.no"});
 
         List<Integer> ports = new LinkedList<Integer>();
         for(String strPort: settings.getAsArray("transport.found.ssl-ports", new String[] {"9343"})) {
