@@ -13,13 +13,15 @@ between local development, staging and production.
 
 Elasticsearch | This Module | Notes
 --- | --- | ---
-1.4.0 -> 1.5.x | 0.8.8-1.4.0 | ``transport.type`` [has changed](#changes).
+1.4.0 -> 1.5.x | 0.8.9-1.4.0 | ``transport.type`` [has changed](#changes).
 1.2.0 -> 1.3.x | 0.8.7-1.2.0 | For 1.4.0+, ``transport.type`` [has changed](#changes).
 1.0.0 -> 1.1.x | 0.8.7-1.0.0
 0.90.3 -> 0.90.x | 0.8.7-0.90.3
 0.20.x -> 0.90.2 | 0.8.7-0.20.0
 
 ### Changes
+
+0.8.9 -> Add support for .found.io by default.
 
 0.8.8 -> Replace the HashedWheelTimer used for the connection-level Keep-Alive
     messages with a ScheduledExecutorService provided by Elasticsearch.
@@ -136,8 +138,8 @@ Settings settings = ImmutableSettings.settingsBuilder()
     // - for earlier versions (1.2.0 -> 1.3.x):
     //.put("transport.type", "no.found.elasticsearch.transport.netty.FoundNettyTransportModule")
     
-    // enable the transport only for the given hosts:
-    .put("transport.found.host-suffixes", ".found.io,.foundcluster.com")
+    // enable the transport only for the given hosts: (required for 0.8.8 and earlier)
+    //.put("transport.found.host-suffixes", ".found.io,.foundcluster.com")
     
     // Create an api key via the console and add it here:
     .put("transport.found.api-key", "YOUR_API_KEY")
