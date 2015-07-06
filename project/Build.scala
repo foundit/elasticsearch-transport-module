@@ -61,6 +61,8 @@ object Build extends Build {
 
     scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation", "-feature"),
 
+    javacOptions in ThisBuild ++= Seq("-Xdoclint:none"),
+
     libraryDependencies := transportDependencies
   ).settings(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*).settings(releaseSettings: _*).settings(
       ReleaseKeys.releaseVersion := { ver => ver.replace("-SNAPSHOT", "") },
