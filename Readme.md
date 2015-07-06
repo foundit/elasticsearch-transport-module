@@ -101,7 +101,7 @@ New settings introduced by this module:
 
 * ``transport.found.host-suffixes``: A comma-separated list of host suffixes that
  trigger our attempt to authenticate with Found Elasticsearch. Defaults to
- ``foundcluster.com,found.no``.
+ ``found.io,foundcluster.com,found.no``.
 
 * ``transport.found.ssl-ports``: A comma-separated list of ports that trigger our
  SSL support. Defaults to ``9343``.
@@ -153,7 +153,7 @@ Settings settings = ImmutableSettings.settingsBuilder()
 // Instantiate a TransportClient and add Found Elasticsearch to the list of addresses to connect to.
 // Only port 9343 (SSL-encrypted) is currently supported.
 Client client = new TransportClient(settings)
-    .addTransportAddress(new InetSocketTransportAddress("YOUR_CLUSTER_ID-REGION.foundcluster.com", 9343));
+    .addTransportAddress(new InetSocketTransportAddress("YOUR_CLUSTER_ID.REGION.PROVIDER.found.io", 9343));
 ```
 
 ## Example usage
