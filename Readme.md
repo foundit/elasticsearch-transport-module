@@ -136,6 +136,9 @@ Settings settings = ImmutableSettings.settingsBuilder()
     // - for earlier versions (1.2.0 -> 1.3.x):
     //.put("transport.type", "no.found.elasticsearch.transport.netty.FoundNettyTransportModule")
     
+    // enable the transport only for the given hosts:
+    .put("transport.found.host-suffixes", ".found.io,.foundcluster.com")
+    
     // Create an api key via the console and add it here:
     .put("transport.found.api-key", "YOUR_API_KEY")
 
