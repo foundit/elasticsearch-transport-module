@@ -68,7 +68,7 @@ To install, add a dependency to this module in your build system :
 
 The module is enabled by adding this project as a dependency to your application
 and setting the ``transport.type`` setting in Elasticsearch to
-``no.found.elasticsearch.transport.netty.FoundNettyTransportModule``.
+``org.elasticsearch.transport.netty.FoundNettyTransport``.
 
 Note: This is not a standard Elasticsearch plugin, it just needs to be on the
 application classpath.
@@ -132,11 +132,8 @@ Not doing so may greatly increase the number of disconnects and reconnects due t
 ```java
 // Build the settings for our transport client.
 Settings settings = ImmutableSettings.settingsBuilder()
-    // Setting "transport.type" enables this module, depending on the Elasticsearch version
-    // - for versions 1.4.0 and later:
+    // Setting "transport.type" enables this module
     .put("transport.type", "org.elasticsearch.transport.netty.FoundNettyTransport")
-    // - for earlier versions (1.2.0 -> 1.3.x):
-    //.put("transport.type", "no.found.elasticsearch.transport.netty.FoundNettyTransportModule")
     
     // enable the transport only for the given hosts: (required for 0.8.8 and earlier)
     //.put("transport.found.host-suffixes", ".found.io,.foundcluster.com")
